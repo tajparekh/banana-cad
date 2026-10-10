@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D CAD · multi-select · fuse</title>
+<style>
+  * { box-sizing: border-box; user-select: none; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #1a1a2e;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    color: #d0d0f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  .app { display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100vh; }
+  .top-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: #1f1f34; border-radius: 14px;
+    padding: 8px 16px; box-shadow: inset 0 0 0 1px #3c3c5e;
+    flex-wrap: wrap; flex-shrink: 0;
+  }
+  .top-bar .group { display: flex; align-items: center; gap: 6px; }
+  .top-bar label {
+    color: #b9b9e0; font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .top-bar input[type=range] { width: 110px; accent-color: #4f8ef7; cursor: pointer; }
+  .top-bar input[type=range]:disabled { opacity: 0.4; cursor: not-allowed; }
+  .scale-value {
+    color: #f0e68c; font-weight: 700; font-size: 0.85rem;
+    min-width: 46px; text-align: center;
+    background: #2b2b48; padding: 3px 8px;
+    border-radius: 6px; border: 1px solid #4a4a72;
+  }
+  .view-btn {
+    background: #2b2b48; border: 1px solid #56568a;
+    color: #d0d0f0; border-radius: 8px;
+    padding: 5px 12px; font-size: 0.7rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .view-btn:hover { background: #35355a; }
+  .y-panel { display: flex; align-items: center; gap: 6px; }
+  .y-btn {
+    background: #2b2b48; border: 1px solid #56568a;
+    color: #d0d0f0; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.9rem;
+    font-weight: 700; cursor: pointer;
+    min-width: 44px;
+  }
+  .y-btn:hover { background: #35355a; }
+  .y-btn:active { transform: scale(0.94); }
+  .y-value {
+    color: #f0e68c; font-weight: 700; font-size: 0.85rem;
+    min-width: 70px; text-align: center;
+    background: #2b2b48; padding: 4px 8px;
+    border-radius: 6px; border: 1px solid #4a4a72;
+  }
+  .delete-btn {
+    background: #6b1e1e; border: 1px solid #a03030;
+    color: #ffd0d0; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.7rem;
+    font-weight: 700; cursor: pointer;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .delete-btn:hover { background: #8a2626; }
+  .delete-btn:active { transform: scale(0.96); }
+  .delete-btn:disabled {
+    background: #3a2a2a; color: #7a6a6a;
+    border-color: #4a3a3a; cursor: not-allowed;
+  }
+  .fuse-btn {
+    background: #2a4a2a; border: 1px solid #4a8a4a;
+    color: #d0ffd0; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.7rem;
+    font-weight: 700; cursor: pointer;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .fuse-btn:hover { background: #3a6a3a; }
+  .fuse-btn:active { transform: scale(0.96); }
+  .fuse-btn:disabled {
+    background: #2a3a2a; color: #6a7a6a;
+    border-color: #3a4a3a; cursor: not-allowed;
+  }
+  .select-hint {
+    color: #7a9fd0; font-size: 0.62rem;
+    background: #1a2a3a;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid #3a5a7a;
+    letter-spacing: 0.3px;
+  }
+
+  .main-row { display: flex; gap: 10px; flex: 1; min-height: 0; }
+  .sidebar {
+    display: flex; flex-direction: column; gap: 8px;
+    width: 168px; flex-shrink: 0; min-height: 0;
+  }
+  .library, .color-panel, .rotate-panel {
+    background: #1f1f34; border-radius: 16px;
+    padding: 10px 8px; box-shadow: inset 0 0 0 1px #3c3c5e;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+  }
+  .library { flex: 1; min-height: 0; overflow-y: auto; }
+  .library::-webkit-scrollbar { width: 5px; }
+  .library::-webkit-scrollbar-thumb { background: #4a4a72; border-radius: 4px; }
+  h3 {
+    margin: 0 0 2px 0; font-size: 0.68rem;
+    font-weight: 600; letter-spacing: 1px;
+    color: #b9b9e0; text-transform: uppercase;
+  }
+  .shape-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; width: 100%; justify-items: center;
+  }
+  .shape-btn {
+    width: 66px; height: 62px;
+    background: #2b2b48; border-radius: 10px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    cursor: grab;
+    box-shadow: 0 3px 0 #0f0f1c, 0 4px 8px rgba(0,0,0,0.5);
+    border: 1px solid #56568a;
+    transition: transform 0.08s;
+    color: #8fb8ff; padding: 3px;
+  }
+  .shape-btn:active { cursor: grabbing; transform: scale(0.95); }
+  .shape-btn .icon { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+  .shape-btn .lbl { font-size: 8px; color: #a0a0d0; text-transform: uppercase; }
+  .color-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+  .color-swatch {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid #3e3e60; cursor: pointer;
+    transition: transform 0.1s, border-color 0.1s;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.active { border-color: #f0e68c; transform: scale(1.15); }
+  .rotate-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; }
+  .rot-btn {
+    background: #2b2b48; border: 1px solid #56568a;
+    color: #d0d0f0; border-radius: 6px;
+    padding: 5px 2px; font-size: 0.62rem;
+    font-weight: 600; cursor: pointer; text-align: center;
+  }
+  .rot-btn:hover { background: #35355a; }
+  .rot-btn.full { grid-column: span 2; }
+  .canvas-wrapper {
+    background: #18182b; border-radius: 16px; padding: 4px;
+    box-shadow: inset 0 0 0 1px #3e3e60;
+    position: relative; flex: 1; min-width: 0; min-height: 0;
+  }
+  #mainCanvas {
+    display: block; width: 100%; height: 100%;
+    border-radius: 12px; background: #0f0f1a;
+    cursor: default;
+  }
+  .status-bar {
+    position: absolute; bottom: 10px; left: 12px;
+    color: #ababce; font-size: 0.7rem;
+    background: rgba(20, 20, 35, 0.9);
+    padding: 4px 14px; border-radius: 20px;
+    border: 1px solid #42426a;
+    pointer-events: none; display: flex; gap: 12px;
+  }
+  .status-bar span { color: #f0e68c; font-weight: 600; margin-left: 3px; }
+  .hint {
+    position: absolute; top: 10px; right: 12px;
+    color: #8a8ab8; font-size: 0.65rem;
+    background: rgba(20,20,35,0.8);
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid #3e3e60; pointer-events: none;
+  }
+  .fuse-badge {
+    position: absolute; top: 44px; right: 12px;
+    color: #d0ffd0; font-size: 0.65rem;
+    background: rgba(30,60,30,0.85);
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid #4a8a4a; pointer-events: none;
+    display: none;
+  }
+  .multi-badge {
+    position: absolute; top: 44px; right: 12px;
+    color: #d0e6ff; font-size: 0.65rem;
+    background: rgba(30,50,80,0.85);
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid #4a7a9a; pointer-events: none;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top-bar">
+    <div class="group">
+      <label>Scale</label>
+      <input type="range" id="scaleSlider" min="0.3" max="4" step="0.05" value="1" disabled>
+      <span class="scale-value" id="scaleValue">1.00</span>
+    </div>
+
+    <div class="group">
+      <label>Y</label>
+      <button class="y-btn" id="yDown" title="Move down (PageDown)">▼</button>
+      <span class="y-value" id="yValue">0.00</span>
+      <button class="y-btn" id="yUp" title="Move up (PageUp)">▲</button>
+    </div>
+
+    <div class="group">
+      <label>View</label>
+      <button class="view-btn" id="viewTop">top</button>
+      <button class="view-btn" id="viewFront">front</button>
+      <button class="view-btn" id="viewIso">iso</button>
+      <button class="view-btn" id="viewReset">reset</button>
+    </div>
+
+    <div class="group">
+      <button class="fuse-btn" id="fuseBtn" disabled title="Fuse selected shapes">
+        🔗 Fuse
+      </button>
+    </div>
+
+    <div class="group">
+      <button class="delete-btn" id="deleteBtn" disabled title="Delete selected (Del key)">
+        🗑 Delete
+      </button>
+    </div>
+
+    <div class="group">
+      <div class="select-hint">
+        <span id="modKey">⌘/Ctrl</span>+click → multi-select
+      </div>
+    </div>
+  </div>
+
+  <div class="main-row">
+    <div class="sidebar">
+      <div class="library">
+        <h3>3D shapes</h3>
+        <div class="shape-grid" id="shapeGrid"></div>
+      </div>
+      <div class="color-panel">
+        <h3>color</h3>
+        <div class="color-row" id="colorRow"></div>
+      </div>
+      <div class="rotate-panel">
+        <h3>rotate</h3>
+        <div class="rotate-buttons">
+          <button class="rot-btn" data-axis="x" data-dir="-1">X−</button>
+          <button class="rot-btn" data-axis="x" data-dir="1">X+</button>
+          <button class="rot-btn" data-axis="y" data-dir="-1">Y−</button>
+          <button class="rot-btn" data-axis="y" data-dir="1">Y+</button>
+          <button class="rot-btn" data-axis="z" data-dir="-1">Z−</button>
+          <button class="rot-btn" data-axis="z" data-dir="1">Z+</button>
+          <button class="rot-btn full" id="resetRotation">reset rot</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="mainCanvas"></canvas>
+      <div class="hint">⌘/Ctrl+click → multi-select · shift+drag → Y · scroll → zoom</div>
+      <div class="fuse-badge" id="fuseBadge">🔗 fused group</div>
+      <div class="multi-badge" id="multiBadge">✱ multi-selection</div>
+      <div class="status-bar">
+        <span id="shapeCount">0</span> shapes
+        <span id="selectedInfo">none selected</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ================= CANVAS =================
+  const canvas = document.getElementById('mainCanvas');
+  const ctx = canvas.getContext('2d');
+  let W = 800, H = 600;
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    W = Math.max(1, Math.floor(rect.width));
+    H = Math.max(1, Math.floor(rect.height));
+    canvas.width = W;
+    canvas.height = H;
+  }
+
+  // ================= VECTOR =================
+  function v3(x, y, z) { return { x: x, y: y, z: z }; }
+  function vadd(a, b) { return v3(a.x + b.x, a.y + b.y, a.z + b.z); }
+  function vsub(a, b) { return v3(a.x - b.x, a.y - b.y, a.z - b.z); }
+  function vscale(a, s) { return v3(a.x * s, a.y * s, a.z * s); }
+  function vdot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+  function vcross(a, b) {
+    return v3(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x);
+  }
+  function vlen(a) { return Math.sqrt(vdot(a, a)); }
+  function vnorm(a) { const l = vlen(a); return l > 0.0001 ? vscale(a, 1/l) : v3(0,0,0); }
+
+  // ================= CAMERA =================
+  const camera = {
+    target: v3(0, 4, 0),
+    distance: 28,
+    yaw: 0.7,
+    pitch: 0.55,
+    fov: 50 * Math.PI / 180
+  };
+
+  function getEye() {
+    const cp = Math.cos(camera.pitch);
+    return v3(
+      camera.target.x + camera.distance * cp * Math.sin(camera.yaw),
+      camera.target.y + camera.distance * Math.sin(camera.pitch),
+      camera.target.z + camera.distance * cp * Math.cos(camera.yaw)
+    );
+  }
+
+  function getView() {
+    const eye = getEye();
+    const forward = vnorm(vsub(camera.target, eye));
+    const worldUp = v3(0, 1, 0);
+    let right = vcross(forward, worldUp);
+    if (vlen(right) < 0.001) right = v3(1, 0, 0);
+    right = vnorm(right);
+    const up = vnorm(vcross(right, forward));
+    return { eye, forward, right, up };
+  }
+
+  function project(p, view) {
+    const rel = vsub(p, view.eye);
+    const cx = vdot(rel, view.right);
+    const cy = vdot(rel, view.up);
+    const cz = vdot(rel, view.forward);
+    if (cz < 0.15) return null;
+    const f = (H / 2) / Math.tan(camera.fov / 2);
+    return { x: W / 2 + (cx * f) / cz, y: H / 2 - (cy * f) / cz, depth: cz };
+  }
+
+  // ================= GEOMETRY =================
+  function boxGeo() {
+    const v = [
+      v3(-0.9, 0, -0.6), v3(0.9, 0, -0.6), v3(0.9, 0, 0.6), v3(-0.9, 0, 0.6),
+      v3(-0.9, 1.2, -0.6), v3(0.9, 1.2, -0.6), v3(0.9, 1.2, 0.6), v3(-0.9, 1.2, 0.6)
+    ];
+    const e = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    const f = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+    return { vertices: v, edges: e, faces: f };
+  }
+  function sphereGeo() {
+    const v = [], e = [], f = [];
+    const su = 12, sv = 8, r = 0.9;
+    for (let j = 0; j <= sv; j++) {
+      const phi = (j / sv) * Math.PI;
+      for (let i = 0; i <= su; i++) {
+        const theta = (i / su) * Math.PI * 2;
+        v.push(v3(r*Math.sin(phi)*Math.cos(theta), r - r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta)));
+      }
+    }
+    for (let j = 0; j <= sv; j++) for (let i = 0; i < su; i++) e.push([j*(su+1)+i, j*(su+1)+i+1]);
+    for (let i = 0; i <= su; i++) for (let j = 0; j < sv; j++) e.push([j*(su+1)+i, (j+1)*(su+1)+i]);
+    for (let j = 0; j < sv; j++) for (let i = 0; i < su; i++) {
+      const a = j*(su+1)+i;
+      f.push([a, a+1, a+su+2, a+su+1]);
+    }
+    return { vertices: v, edges: e, faces: f };
+  }
+  function cylinderGeo() {
+    const v = [], e = [], f = [];
+    const seg = 16, r = 0.8, h = 1.6;
+    for (let i = 0; i < seg; i++) { const t = (i/seg)*Math.PI*2; v.push(v3(r*Math.cos(t), 0, r*Math.sin(t))); }
+    for (let i = 0; i < seg; i++) { const t = (i/seg)*Math.PI*2; v.push(v3(r*Math.cos(t), h, r*Math.sin(t))); }
+    const bc = v.length; v.push(v3(0,0,0));
+    const tc = v.length; v.push(v3(0,h,0));
+    for (let i = 0; i < seg; i++) {
+      const ni = (i+1)%seg;
+      e.push([i, ni]); e.push([seg+i, seg+ni]); e.push([i, seg+i]);
+    }
+    for (let i = 0; i < seg; i++) { const ni = (i+1)%seg; f.push([bc, ni, i]); }
+    for (let i = 0; i < seg; i++) { const ni = (i+1)%seg; f.push([tc, seg+i, seg+ni]); }
+    for (let i = 0; i < seg; i++) { const ni = (i+1)%seg; f.push([i, seg+i, seg+ni, ni]); }
+    return { vertices: v, edges: e, faces: f };
+  }
+  function coneGeo() {
+    const v = [], e = [], f = [];
+    const seg = 16, r = 0.9, h = 1.7;
+    for (let i = 0; i < seg; i++) { const t = (i/seg)*Math.PI*2; v.push(v3(r*Math.cos(t), 0, r*Math.sin(t))); }
+    const apex = v.length; v.push(v3(0, h, 0));
+    const bc = v.length; v.push(v3(0, 0, 0));
+    for (let i = 0; i < seg; i++) { e.push([i, (i+1)%seg]); e.push([i, apex]); }
+    for (let i = 0; i < seg; i++) { const ni = (i+1)%seg; f.push([bc, ni, i]); }
+    for (let i = 0; i < seg; i++) { const ni = (i+1)%seg; f.push([i, ni, apex]); }
+    return { vertices: v, edges: e, faces: f };
+  }
+  function torusGeo() {
+    const v = [], e = [], f = [];
+    const su = 16, sv = 8, R = 0.8, r = 0.3;
+    for (let i = 0; i < su; i++) {
+      const u = (i/su)*Math.PI*2;
+      for (let j = 0; j < sv; j++) {
+        const vv = (j/sv)*Math.PI*2;
+        v.push(v3((R + r*Math.cos(vv))*Math.cos(u), r*Math.sin(vv) + r + 0.3, (R + r*Math.cos(vv))*Math.sin(u)));
+      }
+    }
+    for (let i = 0; i < su; i++) for (let j = 0; j < sv; j++) {
+      const a = i*sv + j;
+      e.push([a, ((i+1)%su)*sv + j]);
+      e.push([a, i*sv + (j+1)%sv]);
+    }
+    for (let i = 0; i < su; i++) for (let j = 0; j < sv; j++) {
+      const a = i*sv + j;
+      const b = i*sv + (j+1)%sv;
+      const c = ((i+1)%su)*sv + (j+1)%sv;
+      const d = ((i+1)%su)*sv + j;
+      f.push([a, d, c, b]);
+    }
+    return { vertices: v, edges: e, faces: f };
+  }
+  function tetraGeo() {
+    const v = [v3(0,1.4,0), v3(-1,0,-0.6), v3(1,0,-0.6), v3(0,0,1.1)];
+    const e = [[0,1],[0,2],[0,3],[1,2],[2,3],[3,1]];
+    const f = [[0,2,1],[0,1,3],[0,3,2],[1,2,3]];
+    return { vertices: v, edges: e, faces: f };
+  }
+  function octaGeo() {
+    const s = 0.9;
+    const v = [v3(0,1.5,0), v3(s,0.75,0), v3(0,0.75,s), v3(-s,0.75,0), v3(0,0.75,-s), v3(0,0,0)];
+    const e = [[0,1],[0,2],[0,3],[0,4],[5,1],[5,2],[5,3],[5,4],[1,2],[2,3],[3,4],[4,1]];
+    const f = [[0,2,1],[0,3,2],[0,4,3],[0,1,4],[5,1,2],[5,2,3],[5,3,4],[5,4,1]];
+    return { vertices: v, edges: e, faces: f };
+  }
+  function pyramidGeo() {
+    const v = [v3(0,1.6,0), v3(-0.9,0,-0.9), v3(0.9,0,-0.9), v3(0.9,0,0.9), v3(-0.9,0,0.9)];
+    const e = [[0,1],[0,2],[0,3],[0,4],[1,2],[2,3],[3,4],[4,1]];
+    const f = [[0,2,1],[0,3,2],[0,4,3],[0,1,4],[1,2,3,4]];
+    return { vertices: v, edges: e, faces: f };
+  }
+  function prismGeo() {
+    const v = [v3(0,0,-0.9), v3(0.9,0,0.5), v3(-0.9,0,0.5), v3(0,1.4,-0.9), v3(0.9,1.4,0.5), v3(-0.9,1.4,0.5)];
+    const e = [[0,1],[1,2],[2,0],[3,4],[4,5],[5,3],[0,3],[1,4],[2,5]];
+    const f = [[0,2,1],[3,4,5],[0,1,4,3],[1,2,5,4],[2,0,3,5]];
+    return { vertices: v, edges: e, faces: f };
+  }
+  function gemGeo(scale) {
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const raw = [
+      [-1,phi,0], [1,phi,0], [-1,-phi,0], [1,-phi,0],
+      [0,-1,phi], [0,1,phi], [0,-1,-phi], [0,1,-phi],
+      [phi,0,-1], [phi,0,1], [-phi,0,-1], [-phi,0,1]
+    ];
+    const v = [];
+    let minY = Infinity;
+    raw.forEach(p => { minY = Math.min(minY, p[1]); });
+    raw.forEach(p => v.push(v3(p[0]*scale, (p[1]-minY)*scale + 0.2, p[2]*scale)));
+    const e = [];
+    for (let i = 0; i < v.length; i++)
+      for (let j = i+1; j < v.length; j++)
+        if (vlen(vsub(v[i], v[j])) < scale * 2.2) e.push([i, j]);
+    return { vertices: v, edges: e, faces: [] };
+  }
+  function dodecaGeo() { return gemGeo(0.65); }
+  function icosaGeo()  { return gemGeo(0.7); }
+  function capsuleGeo() {
+    const v = [], e = [], f = [];
+    const r = 0.55, cylH = 0.9, su = 14, sv = 5;
+    const bottomPoleIdx = v.length; v.push(v3(0,0,0));
+    const bottomRingStart = v.length;
+    for (let j = 1; j <= sv; j++) {
+      const phi = (j/sv)*(Math.PI/2);
+      const y = r - r*Math.cos(phi);
+      const rad = r*Math.sin(phi);
+      for (let i = 0; i < su; i++) {
+        const t = (i/su)*Math.PI*2;
+        v.push(v3(rad*Math.cos(t), y, rad*Math.sin(t)));
+      }
+    }
+    const bottomEquatorStart = bottomRingStart + (sv - 1)*su;
+    const topEquatorStart = v.length;
+    for (let i = 0; i < su; i++) { const t = (i/su)*Math.PI*2; v.push(v3(r*Math.cos(t), r + cylH, r*Math.sin(t))); }
+    const topHemiStart = v.length;
+    for (let j = 1; j < sv; j++) {
+      const phi = (j/sv)*(Math.PI/2);
+      const y = r + cylH + r*Math.sin(phi);
+      const rad = r*Math.cos(phi);
+      for (let i = 0; i < su; i++) { const t = (i/su)*Math.PI*2; v.push(v3(rad*Math.cos(t), y, rad*Math.sin(t))); }
+    }
+    const topPoleIdx = v.length; v.push(v3(0, r + cylH + r, 0));
+    for (let i = 0; i < su; i++) e.push([bottomPoleIdx, bottomRingStart + i]);
+    for (let j = 0; j < sv - 2; j++) {
+      const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
+      for (let i = 0; i < su; i++) e.push([a+i, b+i]);
+    }
+    for (let i = 0; i < su; i++) e.push([bottomEquatorStart + i, topEquatorStart + i]);
+    for (let i = 0; i < su; i++) e.push([topEquatorStart + i, topHemiStart + i]);
+    for (let j = 0; j < sv - 2; j++) {
+      const a = topHemiStart + j*su, b = topHemiStart + (j+1)*su;
+      for (let i = 0; i < su; i++) e.push([a+i, b+i]);
+    }
+    const lastTopRing = topHemiStart + (sv - 2)*su;
+    for (let i = 0; i < su; i++) e.push([lastTopRing + i, topPoleIdx]);
+    for (let i = 0; i < su; i++) {
+      const ni = (i+1)%su;
+      for (let j = 0; j < sv - 1; j++) e.push([bottomRingStart + j*su + i, bottomRingStart + j*su + ni]);
+      e.push([bottomEquatorStart + i, bottomEquatorStart + ni]);
+      e.push([topEquatorStart + i, topEquatorStart + ni]);
+      for (let j = 0; j < sv - 1; j++) e.push([topHemiStart + j*su + i, topHemiStart + j*su + ni]);
+    }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([bottomPoleIdx, bottomRingStart + ni, bottomRingStart + i]); }
+    for (let j = 0; j < sv - 2; j++) {
+      const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
+      for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([a+i, a+ni, b+ni, b+i]); }
+    }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([bottomEquatorStart+i, bottomEquatorStart+ni, topEquatorStart+ni, topEquatorStart+i]); }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([topEquatorStart+i, topEquatorStart+ni, topHemiStart+ni, topHemiStart+i]); }
+    for (let j = 0; j < sv - 2; j++) {
+      const a = topHemiStart + j*su, b = topHemiStart + (j+1)*su;
+      for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([a+i, a+ni, b+ni, b+i]); }
+    }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([topPoleIdx, lastTopRing + i, lastTopRing + ni]); }
+    return { vertices: v, edges: e, faces: f };
+  }
+  function torusKnotGeo() {
+    const v = [], e = [];
+    const seg = 60, R = 0.7, r = 0.22, p = 2, q = 3;
+    for (let i = 0; i < seg; i++) {
+      const t = (i/seg)*Math.PI*2;
+      const cu = Math.cos(q*t);
+      v.push(v3((R + r*cu)*Math.cos(p*t), r*Math.sin(q*t) + 0.9, (R + r*cu)*Math.sin(p*t)));
+    }
+    for (let i = 0; i < seg; i++) e.push([i, (i+1)%seg]);
+    return { vertices: v, edges: e, faces: [] };
+  }
+
+  const GEO_FACTORY = {
+    box: boxGeo, sphere: sphereGeo, cylinder: cylinderGeo, cone: coneGeo,
+    torus: torusGeo, tetra: tetraGeo, octa: octaGeo, dodeca: dodecaGeo,
+    icosa: icosaGeo, capsule: capsuleGeo, torusKnot: torusKnotGeo,
+    pyramid: pyramidGeo, prism: prismGeo
+  };
+
+  // ================= COLOR =================
+  const COLORS = [
+    { name: 'blue', hex: '#4f8ef7', stroke: '#1e3d7a' },
+    { name: 'orange', hex: '#f78b4f', stroke: '#9e4d1a' },
+    { name: 'green', hex: '#4fcf7a', stroke: '#1f6e3a' },
+    { name: 'red', hex: '#f75f5f', stroke: '#8a1f1f' },
+    { name: 'purple', hex: '#af6ff7', stroke: '#5a2a8a' },
+    { name: 'cyan', hex: '#4fd7f7', stroke: '#1a6a8a' },
+    { name: 'yellow', hex: '#f7d44f', stroke: '#8a6a1a' },
+    { name: 'white', hex: '#d0d0f0', stroke: '#6a6a8a' }
+  ];
+  let activeColor = COLORS[0];
+
+  // ================= SHAPES & SELECTION =================
+  const shapes = [];
+  // selectedShapes: Set of shape objects currently selected.
+  // The "primary" selectedShape is the last one clicked (used for scale/rotate).
+  const selectedShapes = new Set();
+  let selectedShape = null;
+
+  const MAX_Y = 30;
+  const Y_STEP = 0.5;
+
+  function makeShape(type, x, z, colorIdx) {
+    const geo = GEO_FACTORY[type]();
+    const col = (colorIdx !== undefined) ? COLORS[colorIdx] : activeColor;
+    return {
+      type: type,
+      geo: geo,
+      pos: v3(x, 0, z),
+      rot: v3(0, 0, 0),
+      scale: 1,
+      color: col
+    };
+  }
+
+  function makeFusedGroup(parts, groupPos) {
+    const gPos = v3(groupPos.x, groupPos.y, groupPos.z);
+    const localParts = parts.map(function (p) {
+      return {
+        type: p.type,
+        geo: p.geo,
+        relPos: v3(p.pos.x - gPos.x, p.pos.y - gPos.y, p.pos.z - gPos.z),
+        rot: v3(p.rot.x, p.rot.y, p.rot.z),
+        scale: p.scale,
+        color: p.color
+      };
+    });
+    return {
+      isFused: true,
+      parts: localParts,
+      pos: gPos,
+      rot: v3(0, 0, 0),
+      scale: 1,
+      color: parts[0].color
+    };
+  }
+
+  function addDemoShapes() {
+    const demo = [
+      ['box', -3, -2], ['sphere', 3, 2], ['cylinder', 0, 0],
+      ['cone', -3, 3], ['capsule', 3, -3]
+    ];
+    demo.forEach(function (d, i) {
+      shapes.push(makeShape(d[0], d[1], d[2], i % COLORS.length));
+    });
+    updateStatus();
+  }
+
+  // ================= TRANSFORM =================
+  function rotateVec(p, rot) {
+    let { x, y, z } = p;
+    let c = Math.cos(rot.x), s = Math.sin(rot.x);
+    let ny = y*c - z*s, nz = y*s + z*c;
+    y = ny; z = nz;
+    c = Math.cos(rot.y); s = Math.sin(rot.y);
+    let nx = x*c + z*s;
+    nz = -x*s + z*c;
+    x = nx; z = nz;
+    c = Math.cos(rot.z); s = Math.sin(rot.z);
+    nx = x*c - y*s;
+    ny = x*s + y*c;
+    x = nx; y = ny;
+    return v3(x, y, z);
+  }
+
+  function transformVertex(v, shape) {
+    const s = vscale(v, shape.scale);
+    const r = rotateVec(s, shape.rot);
+    return vadd(r, shape.pos);
+  }
+
+  function transformPartVertex(v, part, group) {
+    const s = vscale(v, part.scale);
+    const r = rotateVec(s, part.rot);
+    const inGroup = vadd(r, part.relPos);
+    const gs = vscale(inGroup, group.scale);
+    const gr = rotateVec(gs, group.rot);
+    return vadd(gr, group.pos);
+  }
+
+  function getWorldVertices(shape) {
+    if (shape.isFused) {
+      const verts = [];
+      shape.parts.forEach(function (part) {
+        part.geo.vertices.forEach(function (v) {
+          verts.push(transformPartVertex(v, part, shape));
+        });
+      });
+      return verts;
+    } else {
+      return shape.geo.vertices.map(function (v) { return transformVertex(v, shape); });
+    }
+  }
+
+  function getShapeCenter(shape) {
+    const verts = getWorldVertices(shape);
+    if (verts.length === 0) return shape.pos;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    verts.forEach(function (v) {
+      if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+      if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+      if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
+    });
+    return v3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
+  }
+
+  // Combined center of a set of shapes
+  function getMultiCenter(shapesArr) {
+    if (shapesArr.length === 0) return v3(0, 0, 0);
+    if (shapesArr.length === 1) return getShapeCenter(shapesArr[0]);
+    const c = v3(0, 0, 0);
+    shapesArr.forEach(function (s) {
+      const sc = getShapeCenter(s);
+      c.x += sc.x; c.y += sc.y; c.z += sc.z;
+    });
+    c.x /= shapesArr.length;
+    c.y /= shapesArr.length;
+    c.z /= shapesArr.length;
+    return c;
+  }
+
+  // ================= RENDER =================
+  function render() {
+    if (canvas.width !== W || canvas.height !== H) resizeCanvas();
+
+    const g = ctx.createRadialGradient(W/2, H*0.4, 50, W/2, H/2, Math.max(W, H));
+    g.addColorStop(0, '#181830');
+    g.addColorStop(1, '#0a0a14');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    const view = getView();
+
+    // Ground grid
+    ctx.strokeStyle = 'rgba(90, 120, 180, 0.35)';
+    ctx.lineWidth = 1;
+    const N = 12;
+    for (let i = -N; i <= N; i++) {
+      const a1 = project(v3(i, 0, -N), view);
+      const b1 = project(v3(i, 0, N), view);
+      if (a1 && b1) { ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(b1.x, b1.y); ctx.stroke(); }
+      const a2 = project(v3(-N, 0, i), view);
+      const b2 = project(v3(N, 0, i), view);
+      if (a2 && b2) { ctx.beginPath(); ctx.moveTo(a2.x, a2.y); ctx.lineTo(b2.x, b2.y); ctx.stroke(); }
+    }
+
+    // Y guide for primary selected shape
+    if (selectedShape) {
+      const baseY = getShapeBaseY(selectedShape);
+      if (baseY > 0.05) {
+        const topPt = v3(selectedShape.pos.x, baseY, selectedShape.pos.z);
+        const bottomPt = v3(selectedShape.pos.x, 0, selectedShape.pos.z);
+        const pTop = project(topPt, view);
+        const pBot = project(bottomPt, view);
+        if (pTop && pBot) {
+          ctx.strokeStyle = 'rgba(240, 230, 140, 0.55)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(pTop.x, pTop.y);
+          ctx.lineTo(pBot.x, pBot.y);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(240, 230, 140, 0.7)';
+          ctx.beginPath();
+          ctx.arc(pBot.x, pBot.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
+    // Sort by distance from camera
+    const eye = view.eye;
+    const sorted = shapes.slice().sort(function (a, b) {
+      const ca = getShapeCenter(a), cb = getShapeCenter(b);
+      return vlen(vsub(cb, eye)) - vlen(vsub(ca, eye));
+    });
+
+    sorted.forEach(function (shape) { drawShape(shape, view); });
+
+    // Selection rings for all selected shapes
+    selectedShapes.forEach(function (shape) {
+      const c = getShapeCenter(shape);
+      const p = project(c, view);
+      if (!p) return;
+      const verts = getWorldVertices(shape);
+      let maxR = 0;
+      verts.forEach(function (v) {
+        const r = vlen(vsub(v, c));
+        if (r > maxR) maxR = r;
+      });
+      const ringR = Math.max(20, maxR * 20 + 10);
+      const isPrimary = (shape === selectedShape);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
+      if (shape.isFused) ctx.strokeStyle = isPrimary ? '#a0ffa0' : '#7ad07a';
+      else ctx.strokeStyle = isPrimary ? '#f0e68c' : '#c0b860';
+      ctx.lineWidth = isPrimary ? 2.5 : 1.8;
+      ctx.setLineDash(isPrimary ? [6, 5] : [3, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  }
+
+  function getShapeBaseY(shape) {
+    const verts = getWorldVertices(shape);
+    let minY = Infinity;
+    verts.forEach(function (v) { if (v.y < minY) minY = v.y; });
+    return minY === Infinity ? shape.pos.y : minY;
+  }
+
+  function drawShape(shape, view) {
+    if (shape.isFused) {
+      shape.parts.forEach(function (part) {
+        drawPart(part, shape, view);
+      });
+    } else {
+      drawPrimitive(shape, view);
+    }
+  }
+
+  function drawPrimitive(shape, view) {
+    const geo = shape.geo;
+    const worldVerts = geo.vertices.map(function (v) { return transformVertex(v, shape); });
+    const proj = worldVerts.map(function (wp) { return project(wp, view); });
+
+    if (geo.faces.length > 0) {
+      const camPos = view.eye;
+      const faceData = [];
+      geo.faces.forEach(function (face) {
+        let depthSum = 0, n = 0, visible = false;
+        face.forEach(function (idx) {
+          if (proj[idx]) { depthSum += proj[idx].depth; n++; visible = true; }
+        });
+        if (!visible) return;
+        faceData.push({ face: face, depth: depthSum / n });
+      });
+      faceData.sort(function (a, b) { return b.depth - a.depth; });
+
+      faceData.forEach(function (fd) {
+        const face = fd.face;
+        const pts = [];
+        let ok = true;
+        for (let i = 0; i < face.length; i++) {
+          const p = proj[face[i]];
+          if (!p) { ok = false; break; }
+          pts.push(p);
+        }
+        if (!ok) return;
+
+        const a = worldVerts[face[0]];
+        const b = worldVerts[face[1]];
+        const c = worldVerts[face[2]];
+        let nrm = vnorm(vcross(vsub(b, a), vsub(c, a)));
+        if (vdot(nrm, vsub(camPos, a)) < 0) nrm = vscale(nrm, -1);
+
+        const lightDir = vnorm(v3(0.4, 0.9, 0.5));
+        const diff = Math.max(0, vdot(nrm, lightDir));
+        const intensity = 0.35 + 0.65 * diff;
+
+        const R = parseInt(shape.color.hex.substr(1,2), 16);
+        const G = parseInt(shape.color.hex.substr(3,2), 16);
+        const B = parseInt(shape.color.hex.substr(5,2), 16);
+        const rr = Math.min(255, Math.floor(R * intensity));
+        const gg = Math.min(255, Math.floor(G * intensity));
+        const bb = Math.min(255, Math.floor(B * intensity));
+
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgb(' + rr + ',' + gg + ',' + bb + ')';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      });
+    }
+
+    ctx.strokeStyle = shape.color.stroke;
+    ctx.lineWidth = 1.3;
+    ctx.lineJoin = 'round';
+    geo.edges.forEach(function (edge) {
+      const a = proj[edge[0]], b = proj[edge[1]];
+      if (!a || !b) return;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+
+    if (geo.faces.length === 0) {
+      ctx.fillStyle = shape.color.hex;
+      proj.forEach(function (p) {
+        if (!p) return;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  }
+
+  function drawPart(part, group, view) {
+    const geo = part.geo;
+    const worldVerts = geo.vertices.map(function (v) {
+      return transformPartVertex(v, part, group);
+    });
+    const proj = worldVerts.map(function (wp) { return project(wp, view); });
+
+    if (geo.faces.length > 0) {
+      const camPos = view.eye;
+      const faceData = [];
+      geo.faces.forEach(function (face) {
+        let depthSum = 0, n = 0, visible = false;
+        face.forEach(function (idx) {
+          if (proj[idx]) { depthSum += proj[idx].depth; n++; visible = true; }
+        });
+        if (!visible) return;
+        faceData.push({ face: face, depth: depthSum / n });
+      });
+      faceData.sort(function (a, b) { return b.depth - a.depth; });
+
+      faceData.forEach(function (fd) {
+        const face = fd.face;
+        const pts = [];
+        let ok = true;
+        for (let i = 0; i < face.length; i++) {
+          const p = proj[face[i]];
+          if (!p) { ok = false; break; }
+          pts.push(p);
+        }
+        if (!ok) return;
+
+        const a = worldVerts[face[0]];
+        const b = worldVerts[face[1]];
+        const c = worldVerts[face[2]];
+        let nrm = vnorm(vcross(vsub(b, a), vsub(c, a)));
+        if (vdot(nrm, vsub(camPos, a)) < 0) nrm = vscale(nrm, -1);
+
+        const lightDir = vnorm(v3(0.4, 0.9, 0.5));
+        const diff = Math.max(0, vdot(nrm, lightDir));
+        const intensity = 0.35 + 0.65 * diff;
+
+        const R = parseInt(part.color.hex.substr(1,2), 16);
+        const G = parseInt(part.color.hex.substr(3,2), 16);
+        const B = parseInt(part.color.hex.substr(5,2), 16);
+        const rr = Math.min(255, Math.floor(R * intensity));
+        const gg = Math.min(255, Math.floor(G * intensity));
+        const bb = Math.min(255, Math.floor(B * intensity));
+
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgb(' + rr + ',' + gg + ',' + bb + ')';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      });
+    }
+
+    ctx.strokeStyle = part.color.stroke;
+    ctx.lineWidth = 1.3;
+    ctx.lineJoin = 'round';
+    geo.edges.forEach(function (edge) {
+      const a = proj[edge[0]], b = proj[edge[1]];
+      if (!a || !b) return;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    });
+
+    if (geo.faces.length === 0) {
+      ctx.fillStyle = part.color.hex;
+      proj.forEach(function (p) {
+        if (!p) return;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  }
+
+  // ================= RAY / PICKING =================
+  function screenRay(mx, my) {
+    const view = getView();
+    const f = (H / 2) / Math.tan(camera.fov / 2);
+    const ndcX = (mx - W/2) / f;
+    const ndcY = -(my - H/2) / f;
+    const dir = vnorm(vadd(
+      vadd(vscale(view.right, ndcX), vscale(view.up, ndcY)),
+      view.forward
+    ));
+    return { origin: view.eye, dir: dir };
+  }
+
+  function rayGroundY0(ray) {
+    if (Math.abs(ray.dir.y) < 1e-4) return null;
+    const t = -ray.origin.y / ray.dir.y;
+    if (t < 0) return null;
+    return vadd(ray.origin, vscale(ray.dir, t));
+  }
+
+  function rayHorizontalPlane(ray, y) {
+    if (Math.abs(ray.dir.y) < 1e-4) return null;
+    const t = (y - ray.origin.y) / ray.dir.y;
+    if (t < 0) return null;
+    return vadd(ray.origin, vscale(ray.dir, t));
+  }
+
+  function pickShape(mx, my) {
+    const view = getView();
+    let best = null, bestDist = 45;
+    shapes.forEach(function (shape) {
+      const center = getShapeCenter(shape);
+      const p = project(center, view);
+      if (!p) return;
+      const d = Math.hypot(p.x - mx, p.y - my);
+      const verts = getWorldVertices(shape);
+      let maxR = 0;
+      verts.forEach(function (v) { const r = vlen(vsub(v, center)); if (r > maxR) maxR = r; });
+      const camDist = vlen(vsub(center, view.eye));
+      const f = (H / 2) / Math.tan(camera.fov / 2);
+      const screenR = (maxR * f) / camDist + 10;
+      if (d < screenR && d < bestDist) { bestDist = d; best = shape; }
+    });
+    return best;
+  }
+
+  // ================= MULTI-SELECT HELPERS =================
+  function clearSelection() {
+    selectedShapes.clear();
+    selectedShape = null;
+    updateStatus(); syncSlider(); updateDeleteButton(); updateFuseButton();
+  }
+
+  function setSelection(shapesArr) {
+    selectedShapes.clear();
+    shapesArr.forEach(function (s) { selectedShapes.add(s); });
+    selectedShape = shapesArr.length > 0 ? shapesArr[shapesArr.length - 1] : null;
+    updateStatus(); syncSlider(); updateDeleteButton(); updateFuseButton();
+  }
+
+  function toggleSelection(shape) {
+    if (selectedShapes.has(shape)) {
+      selectedShapes.delete(shape);
+      if (selectedShape === shape) {
+        // pick another as primary
+        const arr = Array.from(selectedShapes);
+        selectedShape = arr.length > 0 ? arr[arr.length - 1] : null;
+      }
+    } else {
+      selectedShapes.add(shape);
+      selectedShape = shape;
+    }
+    updateStatus(); syncSlider(); updateDeleteButton(); updateFuseButton();
+  }
+
+  function addToSelection(shape) {
+    if (!selectedShapes.has(shape)) {
+      selectedShapes.add(shape);
+    }
+    selectedShape = shape;
+    updateStatus(); syncSlider(); updateDeleteButton(); updateFuseButton();
+  }
+
+  // ================= FUSE =================
+  // If multiple shapes are selected, fuse all of them.
+  // Otherwise, fuse the primary with its nearest neighbor.
+  function fuseSelected() {
+    if (selectedShapes.size === 0) return;
+
+    let partsList;
+    if (selectedShapes.size >= 2) {
+      // Fuse all selected shapes
+      partsList = [];
+      selectedShapes.forEach(function (s) {
+        if (s.isFused) {
+          s.parts.forEach(function (p) {
+            partsList.push({
+              type: p.type, geo: p.geo,
+              pos: v3(s.pos.x + p.relPos.x, s.pos.y + p.relPos.y, s.pos.z + p.relPos.z),
+              rot: p.rot, scale: p.scale, color: p.color
+            });
+          });
+        } else {
+          partsList.push(s);
+        }
+      });
+    } else {
+      // Single selected: fuse with nearest neighbor
+      const primary = selectedShape;
+      const primaryCenter = getShapeCenter(primary);
+      let nearest = null, nearestDist = Infinity;
+      shapes.forEach(function (s) {
+        if (s === primary) return;
+        const c = getShapeCenter(s);
+        const d = vlen(vsub(c, primaryCenter));
+        if (d < nearestDist) { nearestDist = d; nearest = s; }
+      });
+      if (!nearest) return;
+      partsList = [];
+      [primary, nearest].forEach(function (s) {
+        if (s.isFused) {
+          s.parts.forEach(function (p) {
+            partsList.push({
+              type: p.type, geo: p.geo,
+              pos: v3(s.pos.x + p.relPos.x, s.pos.y + p.relPos.y, s.pos.z + p.relPos.z),
+              rot: p.rot, scale: p.scale, color: p.color
+            });
+          });
+        } else {
+          partsList.push(s);
+        }
+      });
+    }
+
+    if (partsList.length < 2) return;
+
+    // Group origin at primary shape's position (or average of selected)
+    const groupPos = selectedShape ? v3(selectedShape.pos.x, selectedShape.pos.y, selectedShape.pos.z) : getMultiCenter(Array.from(selectedShapes));
+    const group = makeFusedGroup(partsList, groupPos);
+
+    // Remove source shapes
+    const toRemove = new Set();
+    if (selectedShapes.size >= 2) {
+      selectedShapes.forEach(function (s) { toRemove.add(s); });
+    } else {
+      toRemove.add(selectedShape);
+      // Find nearest again for removal
+      const primaryCenter = getShapeCenter(selectedShape);
+      let nearest = null, nearestDist = Infinity;
+      shapes.forEach(function (s) {
+        if (s === selectedShape) return;
+        const c = getShapeCenter(s);
+        const d = vlen(vsub(c, primaryCenter));
+        if (d < nearestDist) { nearestDist = d; nearest = s; }
+      });
+      if (nearest) toRemove.add(nearest);
+    }
+    toRemove.forEach(function (s) {
+      const idx = shapes.indexOf(s);
+      if (idx >= 0) shapes.splice(idx, 1);
+    });
+    shapes.push(group);
+
+    setSelection([group]);
+  }
+
+  // ================= INPUT =================
+  let mode = null;
+  let lastMouse = { x: 0, y: 0 };
+  let dragOffset = v3(0, 0, 0);
+  let dragStartY = 0;
+  let dragStartMouseY = 0;
+  // For multi-drag: store the starting positions of all selected shapes
+  let dragStartPositions = null;
+
+  // Detect macOS for the modifier label
+  (function detectMod() {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    document.getElementById('modKey').textContent = isMac ? '⌘' : 'Ctrl';
+  })();
+
+  canvas.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const isMultiMod = e.metaKey || e.ctrlKey;
+
+    const hit = pickShape(mx, my);
+    if (hit) {
+      if (isMultiMod) {
+        // Toggle: Cmd/Ctrl+click adds or removes from selection
+        toggleSelection(hit);
+      } else {
+        // Plain click: if already in a multi-selection, keep the whole selection
+        // so user can drag the group. Otherwise, select just this shape.
+        if (!selectedShapes.has(hit)) {
+          setSelection([hit]);
+        } else {
+          // Keep current selection, make this the primary
+          selectedShape = hit;
+          updateStatus(); syncSlider(); updateDeleteButton(); updateFuseButton();
+        }
+      }
+
+      // Set up drag
+      if (e.shiftKey) {
+        mode = 'dragY';
+        dragStartY = hit.pos.y;
+        dragStartMouseY = my;
+        // Save all positions for group Y move
+        dragStartPositions = new Map();
+        selectedShapes.forEach(function (s) {
+          dragStartPositions.set(s, v3(s.pos.x, s.pos.y, s.pos.z));
+        });
+      } else {
+        mode = 'drag';
+        const ray = screenRay(mx, my);
+        const gp = rayHorizontalPlane(ray, hit.pos.y);
+        if (gp) dragOffset = vsub(hit.pos, v3(gp.x, hit.pos.y, gp.z));
+        else dragOffset = v3(0, 0, 0);
+        // Save all positions for group XZ move
+        dragStartPositions = new Map();
+        selectedShapes.forEach(function (s) {
+          dragStartPositions.set(s, v3(s.pos.x, s.pos.y, s.pos.z));
+        });
+      }
+      canvas.style.cursor = 'grabbing';
+    } else {
+      if (!isMultiMod) {
+        clearSelection();
+      }
+      mode = 'orbit';
+      lastMouse = { x: e.clientX, y: e.clientY };
+      canvas.style.cursor = 'move';
+    }
+  });
+
+  window.addEventListener('mousemove', function (e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    if (mode === 'drag' && selectedShape) {
+      const ray = screenRay(mx, my);
+      const gp = rayHorizontalPlane(ray, selectedShape.pos.y);
+      if (gp) {
+        const nx = gp.x + dragOffset.x;
+        const nz = gp.z + dragOffset.z;
+        const dx = nx - dragStartPositions.get(selectedShape).x;
+        const dz = nz - dragStartPositions.get(selectedShape).z;
+        // Move all selected shapes by the same delta
+        selectedShapes.forEach(function (s) {
+          const start = dragStartPositions.get(s);
+          const fx = start.x + dx;
+          const fz = start.z + dz;
+          const limit = 20;
+          s.pos.x = Math.max(-limit, Math.min(limit, fx));
+          s.pos.z = Math.max(-limit, Math.min(limit, fz));
+        });
+      }
+    } else if (mode === 'dragY' && selectedShape) {
+      const view = getView();
+      const camDist = vlen(vsub(selectedShape.pos, view.eye));
+      const f = (H / 2) / Math.tan(camera.fov / 2);
+      const pixelToWorld = camDist / f;
+      const dy = (dragStartMouseY - my) * pixelToWorld;
+      // Move all selected shapes by same delta in Y
+      selectedShapes.forEach(function (s) {
+        const start = dragStartPositions.get(s);
+        let newY = start.y + dy;
+        newY = Math.max(0, Math.min(MAX_Y, newY));
+        s.pos.y = newY;
+      });
+      updateStatus();
+    } else if (mode === 'orbit') {
+      const dx = e.clientX - lastMouse.x;
+      const dy = e.clientY - lastMouse.y;
+      camera.yaw -= dx * 0.008;
+      camera.pitch += dy * 0.008;
+      camera.pitch = Math.max(-0.1, Math.min(1.4, camera.pitch));
+      lastMouse = { x: e.clientX, y: e.clientY };
+    } else {
+      canvas.style.cursor = pickShape(mx, my) ? 'grab' : 'default';
+    }
+  });
+
+  window.addEventListener('mouseup', function () {
+    if (mode) {
+      mode = null;
+      dragStartPositions = null;
+      canvas.style.cursor = 'default';
+      updateStatus();
+    }
+  });
+
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    const f = e.deltaY > 0 ? 1.1 : 0.9;
+    camera.distance = Math.max(5, Math.min(80, camera.distance * f));
+  }, { passive: false });
+
+  // ================= KEYBOARD =================
+  window.addEventListener('keydown', function (e) {
+    // Cmd/Ctrl+A: select all
+    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+      e.preventDefault();
+      setSelection(shapes.slice());
+      return;
+    }
+    // Escape: clear selection
+    if (e.key === 'Escape') {
+      clearSelection();
+      return;
+    }
+    // Delete/Backspace: delete all selected
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedShapes.size > 0) {
+      e.preventDefault();
+      deleteSelected();
+      return;
+    }
+    if (!selectedShape) return;
+    const step = Math.PI / 12;
+    let handled = false;
+
+    // Transform ALL selected shapes for scale/rotate
+    if (e.key === '+' || e.key === '=') {
+      selectedShapes.forEach(function (s) { s.scale = Math.min(4, s.scale * 1.1); });
+      handled = true;
+    } else if (e.key === '-' || e.key === '_') {
+      selectedShapes.forEach(function (s) { s.scale = Math.max(0.3, s.scale / 1.1); });
+      handled = true;
+    } else if (e.key === '0') {
+      selectedShapes.forEach(function (s) { s.scale = 1; });
+      handled = true;
+    } else if (e.key === 'PageUp') {
+      selectedShapes.forEach(function (s) { s.pos.y = Math.min(MAX_Y, s.pos.y + Y_STEP); });
+      handled = true;
+    } else if (e.key === 'PageDown') {
+      selectedShapes.forEach(function (s) { s.pos.y = Math.max(0, s.pos.y - Y_STEP); });
+      handled = true;
+    } else if (e.key === 'ArrowLeft')  { selectedShapes.forEach(function (s) { s.rot.y -= step; }); handled = true; }
+    else if (e.key === 'ArrowRight')   { selectedShapes.forEach(function (s) { s.rot.y += step; }); handled = true; }
+    else if (e.key === 'ArrowUp')      { selectedShapes.forEach(function (s) { s.rot.x -= step; }); handled = true; }
+    else if (e.key === 'ArrowDown')    { selectedShapes.forEach(function (s) { s.rot.x += step; }); handled = true; }
+
+    if (handled) { e.preventDefault(); updateStatus(); syncSlider(); }
+  });
+
+  // ================= DELETE =================
+  function deleteSelected() {
+    if (selectedShapes.size === 0) return;
+    selectedShapes.forEach(function (s) {
+      const idx = shapes.indexOf(s);
+      if (idx >= 0) shapes.splice(idx, 1);
+    });
+    clearSelection();
+  }
+
+  function updateDeleteButton() {
+    document.getElementById('deleteBtn').disabled = selectedShapes.size === 0;
+  }
+  function updateFuseButton() {
+    // Enable fuse if at least 1 shape selected AND total shapes >= 2
+    document.getElementById('fuseBtn').disabled = selectedShapes.size === 0 || shapes.length < 2;
+  }
+
+  // ================= UI =================
+  function updateStatus() {
+    document.getElementById('shapeCount').textContent = shapes.length;
+    const info = document.getElementById('selectedInfo');
+    if (selectedShapes.size > 1) {
+      info.textContent = selectedShapes.size + ' shapes selected';
+    } else if (selectedShape) {
+      const rx = Math.round(selectedShape.rot.x * 180 / Math.PI);
+      const ry = Math.round(selectedShape.rot.y * 180 / Math.PI);
+      const rz = Math.round(selectedShape.rot.z * 180 / Math.PI);
+      const kind = selectedShape.isFused ? ('fused[' + selectedShape.parts.length + ']') : selectedShape.type;
+      info.textContent = kind + ' · s:' + selectedShape.scale.toFixed(2)
+        + ' · y:' + selectedShape.pos.y.toFixed(2)
+        + ' · ' + rx + '° ' + ry + '° ' + rz + '°';
+    } else {
+      info.textContent = 'none selected';
+    }
+    document.getElementById('yValue').textContent = selectedShape
+      ? selectedShape.pos.y.toFixed(2) : '0.00';
+    document.getElementById('fuseBadge').style.display =
+      (selectedShapes.size === 1 && selectedShape && selectedShape.isFused) ? 'block' : 'none';
+    document.getElementById('multiBadge').style.display =
+      (selectedShapes.size > 1) ? 'block' : 'none';
+  }
+
+  const scaleSlider = document.getElementById('scaleSlider');
+  const scaleValue = document.getElementById('scaleValue');
+
+  function syncSlider() {
+    if (selectedShape) {
+      scaleSlider.disabled = false;
+      scaleSlider.value = selectedShape.scale;
+      scaleValue.textContent = selectedShape.scale.toFixed(2);
+    } else {
+      scaleSlider.disabled = true;
+      scaleSlider.value = 1;
+      scaleValue.textContent = '1.00';
+    }
+  }
+
+  scaleSlider.addEventListener('input', function (e) {
+    if (!selectedShape) return;
+    const newScale = parseFloat(e.target.value);
+    // Apply the same delta to all selected (scale each individually)
+    // For simplicity, set the primary's scale and match relative to others
+    selectedShapes.forEach(function (s) { s.scale = newScale; });
+    scaleValue.textContent = newScale.toFixed(2);
+    updateStatus();
+  });
+
+  document.getElementById('yUp').addEventListener('click', function () {
+    if (selectedShapes.size === 0) return;
+    selectedShapes.forEach(function (s) {
+      s.pos.y = Math.min(MAX_Y, s.pos.y + Y_STEP);
+    });
+    updateStatus();
+  });
+  document.getElementById('yDown').addEventListener('click', function () {
+    if (selectedShapes.size === 0) return;
+    selectedShapes.forEach(function (s) {
+      s.pos.y = Math.max(0, s.pos.y - Y_STEP);
+    });
+    updateStatus();
+  });
+
+  document.getElementById('deleteBtn').addEventListener('click', deleteSelected);
+  document.getElementById('fuseBtn').addEventListener('click', fuseSelected);
+
+  document.querySelectorAll('.rot-btn[data-axis]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (selectedShapes.size === 0) return;
+      const axis = btn.dataset.axis;
+      const dir = parseFloat(btn.dataset.dir);
+      const step = Math.PI / 12 * dir;
+      selectedShapes.forEach(function (s) {
+        if (axis === 'x') s.rot.x += step;
+        else if (axis === 'y') s.rot.y += step;
+        else if (axis === 'z') s.rot.z += step;
+      });
+      updateStatus();
+    });
+  });
+
+  document.getElementById('resetRotation').addEventListener('click', function () {
+    if (selectedShapes.size === 0) return;
+    selectedShapes.forEach(function (s) { s.rot = v3(0, 0, 0); });
+    updateStatus();
+  });
+
+  document.getElementById('viewTop').addEventListener('click', function () {
+    camera.yaw = 0.0001; camera.pitch = 1.5; camera.distance = 28;
+  });
+  document.getElementById('viewFront').addEventListener('click', function () {
+    camera.yaw = 0; camera.pitch = 0.05; camera.distance = 28;
+  });
+  document.getElementById('viewIso').addEventListener('click', function () {
+    camera.yaw = 0.7; camera.pitch = 0.55; camera.distance = 28;
+  });
+  document.getElementById('viewReset').addEventListener('click', function () {
+    camera.yaw = 0.7; camera.pitch = 0.55; camera.distance = 28;
+    camera.target = v3(0, 4, 0);
+  });
+
+  (function setupColors() {
+    const row = document.getElementById('colorRow');
+    COLORS.forEach(function (c, i) {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (i === 0 ? ' active' : '');
+      sw.style.backgroundColor = c.hex;
+      sw.title = c.name;
+      sw.addEventListener('click', function () {
+        activeColor = COLORS[i];
+        document.querySelectorAll('.color-swatch').forEach(function (s) { s.classList.remove('active'); });
+        sw.classList.add('active');
+        selectedShapes.forEach(function (shape) {
+          if (shape.isFused) {
+            shape.parts.forEach(function (p) { p.color = activeColor; });
+          } else {
+            shape.color = activeColor;
+          }
+        });
+      });
+      row.appendChild(sw);
+    });
+  })();
+
+  const SHAPE_LIST = [
+    { type: 'box', icon: '■' }, { type: 'sphere', icon: '●' },
+    { type: 'cylinder', icon: '⬭' }, { type: 'cone', icon: '▲' },
+    { type: 'torus', icon: '◎' }, { type: 'tetra', icon: '◈' },
+    { type: 'octa', icon: '◆' }, { type: 'dodeca', icon: '⬟' },
+    { type: 'icosa', icon: '⬢' }, { type: 'capsule', icon: '⬮' },
+    { type: 'torusKnot', icon: '❋' }, { type: 'pyramid', icon: '△' },
+    { type: 'prism', icon: '◣' }
+  ];
+
+  (function buildLibrary() {
+    const grid = document.getElementById('shapeGrid');
+    SHAPE_LIST.forEach(function (item) {
+      const btn = document.createElement('div');
+      btn.className = 'shape-btn';
+      btn.dataset.shape = item.type;
+      btn.title = 'Drag or click to add ' + item.type;
+      btn.innerHTML = '<div class="icon">' + item.icon + '</div>'
+                    + '<div class="lbl">' + item.type + '</div>';
+      btn.setAttribute('draggable', 'true');
+      btn.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', item.type);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      btn.addEventListener('click', function () { addShapeAtCenter(item.type); });
+      grid.appendChild(btn);
+    });
+  })();
+
+  function addShapeAtCenter(type) {
+    if (!GEO_FACTORY[type]) return;
+    const angle = Math.random() * Math.PI * 2;
+    const r = 1 + Math.random() * 3;
+    shapes.push(makeShape(type, Math.cos(angle) * r, Math.sin(angle) * r));
+    updateStatus(); updateFuseButton();
+  }
+
+  canvas.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  canvas.addEventListener('drop', function (e) {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('text/plain');
+    if (!type || !GEO_FACTORY[type]) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const ray = screenRay(mx, my);
+    const gp = rayGroundY0(ray);
+    let x, z;
+    if (gp) {
+      x = Math.max(-20, Math.min(20, gp.x));
+      z = Math.max(-20, Math.min(20, gp.z));
+    } else {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 1 + Math.random() * 2;
+      x = Math.cos(angle) * r;
+      z = Math.sin(angle) * r;
+    }
+    shapes.push(makeShape(type, x, z));
+    updateStatus(); updateFuseButton();
+  });
+
+  // ================= INIT =================
+  function init() {
+    resizeCanvas();
+    addDemoShapes();
+    updateStatus();
+    syncSlider();
+    updateDeleteButton();
+    updateFuseButton();
+  }
+
+  window.addEventListener('resize', function () { resizeCanvas(); });
+
+  function loop() { render(); requestAnimationFrame(loop); }
+
+  init();
+  loop();
+
+})();
+</script>
+</body>
+</html>
