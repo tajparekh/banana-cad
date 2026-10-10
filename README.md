@@ -1,2 +1,2 @@
 # banana-cad
-simple cad software
+simplified with minimal design and less shapes.
