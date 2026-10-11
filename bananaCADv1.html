@@ -118,7 +118,6 @@
     padding: 6px 14px 6px 6px; cursor: pointer;
   }
   .user-chip:hover { border-color: #f7c44f; }
-  .user-chip.guest { border-color: #f7c44f; }
   .user-avatar {
     width: 32px; height: 32px; border-radius: 50%;
     background: linear-gradient(135deg, #f7d44f 0%, #f7a44f 100%);
@@ -928,7 +927,7 @@
   }
 
   /* ============================================================
-     SHAPES LIBRARY MODAL
+     SHAPES LIBRARY MODAL (new)
      ============================================================ */
   .shapes-lib-overlay {
     position: fixed; inset: 0;
@@ -1038,6 +1037,7 @@
     margin-top: 8px;
     text-align: center;
   }
+  /* Drag ghost for the shapes library */
   #libGhost {
     position: fixed;
     pointer-events: none;
@@ -1118,7 +1118,7 @@
 
   <div class="starter-toolbar">
     <button class="new-project-btn" id="newProjectBtn">
-      <span class="plus">＋</span> New Scratch Pad
+      <span class="plus">＋</span> New Project
     </button>
 
     <div class="tab-bar">
@@ -1232,7 +1232,7 @@
           <span id="selectedInfo">none selected</span>
         </div>
 
-        <!-- SNAP PANEL -->
+        <!-- SNAP PANEL (bottom-right) -->
         <div class="snap-panel" id="snapPanel">
           <div class="snap-header" id="snapHeader">
             <span class="snap-ico">🧲</span>
@@ -1277,6 +1277,7 @@
   </div>
 </div>
 
+<!-- SHAPES LIBRARY MODAL (new) -->
 <div class="shapes-lib-overlay" id="shapesLibOverlay">
   <div class="shapes-lib-box">
     <div class="shapes-lib-head">
@@ -1533,8 +1534,8 @@
   // ============================================================
   // STORAGE
   // ============================================================
-  const STORAGE_KEY = 'banana_cad_v6';
-  const SESSION_KEY = 'banana_cad_session_v6';
+  const STORAGE_KEY = 'banana_cad_v5';
+  const SESSION_KEY = 'banana_cad_session_v5';
 
   let db = { users: [], projects: [] };
   let currentUser = null;
@@ -1560,7 +1561,6 @@
   function guestCanUseShape(type) {
     return GUEST_SHAPES.indexOf(type) >= 0;
   }
-  // Guest scratch pad (in-memory only)
   const guestProjects = [{
     id: 'guest-scratch',
     ownerId: 'guest',
@@ -1762,7 +1762,6 @@
   function signInGuest() {
     currentUser = null;
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
-    // Reset scratch pad when entering guest mode fresh
     guestProjects[0].shapes = defaultDemoShapes();
     guestProjects[0].updatedAt = Date.now();
     enterStarter();
@@ -1960,7 +1959,6 @@
 
   function openNewProjectModal() {
     if (isGuest()) {
-      // Reset the guest scratch pad and open it
       guestProjects[0].shapes = defaultDemoShapes();
       guestProjects[0].updatedAt = Date.now();
       renderProjects(projectSearch.value);
@@ -2619,110 +2617,100 @@
   }
   function dodecaGeo() { return gemGeo(0.65); }
   function icosaGeo()  { return gemGeo(0.7); }
-
-  // FIXED capsule — no missing band
   function capsuleGeo() {
-    const r = 0.55, cylH = 0.9, su = 16, sv = 6;
     const v = [], e = [], f = [];
-    const ringIndices = [];
-    const bottomPole = v.length;
-    v.push(v3(0, 0, 0));
+    const r = 0.55, cylH = 0.9, su = 14, sv = 5;
+    const bottomPoleIdx = v.length; v.push(v3(0,0,0));
+    const bottomRingStart = v.length;
     for (let j = 1; j <= sv; j++) {
-      const phi = (j / sv) * (Math.PI / 2);
-      const y = r - r * Math.cos(phi);
-      const rad = r * Math.sin(phi);
-      ringIndices.push(v.length);
+      const phi = (j/sv)*(Math.PI/2);
+      const y = r - r*Math.cos(phi);
+      const rad = r*Math.sin(phi);
       for (let i = 0; i < su; i++) {
-        const t = (i / su) * Math.PI * 2;
-        v.push(v3(rad * Math.cos(t), y, rad * Math.sin(t)));
+        const t = (i/su)*Math.PI*2;
+        v.push(v3(rad*Math.cos(t), y, rad*Math.sin(t)));
       }
     }
-    const topEquator = v.length;
-    ringIndices.push(topEquator);
-    for (let i = 0; i < su; i++) {
-      const t = (i / su) * Math.PI * 2;
-      v.push(v3(r * Math.cos(t), r + cylH, r * Math.sin(t)));
-    }
+    const bottomEquatorStart = bottomRingStart + (sv - 1)*su;
+    const topEquatorStart = v.length;
+    for (let i = 0; i < su; i++) { const t = (i/su)*Math.PI*2; v.push(v3(r*Math.cos(t), r + cylH, r*Math.sin(t))); }
+    const topHemiStart = v.length;
     for (let j = 1; j < sv; j++) {
-      const phi = (j / sv) * (Math.PI / 2);
-      const y = r + cylH + r * Math.sin(phi);
-      const rad = r * Math.cos(phi);
-      ringIndices.push(v.length);
-      for (let i = 0; i < su; i++) {
-        const t = (i / su) * Math.PI * 2;
-        v.push(v3(rad * Math.cos(t), y, rad * Math.sin(t)));
-      }
+      const phi = (j/sv)*(Math.PI/2);
+      const y = r + cylH + r*Math.sin(phi);
+      const rad = r*Math.cos(phi);
+      for (let i = 0; i < su; i++) { const t = (i/su)*Math.PI*2; v.push(v3(rad*Math.cos(t), y, rad*Math.sin(t))); }
     }
-    const topPole = v.length;
-    v.push(v3(0, r + cylH + r, 0));
+    const topPoleIdx = v.length; v.push(v3(0, r + cylH + r, 0));
+    for (let i = 0; i < su; i++) e.push([bottomPoleIdx, bottomRingStart + i]);
+    for (let j = 0; j < sv - 2; j++) {
+      const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
+      for (let i = 0; i < su; i++) e.push([a+i, b+i]);
+    }
+    for (let i = 0; i < su; i++) e.push([bottomEquatorStart + i, topEquatorStart + i]);
+    for (let i = 0; i < su; i++) e.push([topEquatorStart + i, topHemiStart + i]);
+    for (let j = 0; j < sv - 2; j++) {
+      const a = topHemiStart + j*su, b = topHemiStart + (j+1)*su;
+      for (let i = 0; i < su; i++) e.push([a+i, b+i]);
+    }
+    const lastTopRing = topHemiStart + (sv - 2)*su;
+    for (let i = 0; i < su; i++) e.push([lastTopRing + i, topPoleIdx]);
     for (let i = 0; i < su; i++) {
-      const ni = (i + 1) % su;
-      e.push([bottomPole, ringIndices[0] + i]);
-      f.push([bottomPole, ringIndices[0] + ni, ringIndices[0] + i]);
+      const ni = (i+1)%su;
+      for (let j = 0; j < sv - 1; j++) e.push([bottomRingStart + j*su + i, bottomRingStart + j*su + ni]);
+      e.push([bottomEquatorStart + i, bottomEquatorStart + ni]);
+      e.push([topEquatorStart + i, topEquatorStart + ni]);
+      for (let j = 0; j < sv - 1; j++) e.push([topHemiStart + j*su + i, topHemiStart + j*su + ni]);
     }
-    for (let k = 0; k < sv - 1; k++) {
-      const a = ringIndices[k], b = ringIndices[k + 1];
-      for (let i = 0; i < su; i++) {
-        const ni = (i + 1) % su;
-        e.push([a + i, b + i]); e.push([a + i, a + ni]);
-        f.push([a + i, a + ni, b + ni, b + i]);
-      }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([bottomPoleIdx, bottomRingStart + ni, bottomRingStart + i]); }
+    for (let j = 0; j < sv - 2; j++) {
+      const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
+      for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([a+i, a+ni, b+ni, b+i]); }
     }
-    {
-      const a = ringIndices[sv - 1], b = ringIndices[sv];
-      for (let i = 0; i < su; i++) {
-        const ni = (i + 1) % su;
-        e.push([a + i, b + i]); e.push([a + i, a + ni]); e.push([b + i, b + ni]);
-        f.push([a + i, a + ni, b + ni, b + i]);
-      }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([bottomEquatorStart+i, bottomEquatorStart+ni, topEquatorStart+ni, topEquatorStart+i]); }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([topEquatorStart+i, topEquatorStart+ni, topHemiStart+ni, topHemiStart+i]); }
+    for (let j = 0; j < sv - 2; j++) {
+      const a = topHemiStart + j*su, b = topHemiStart + (j+1)*su;
+      for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([a+i, a+ni, b+ni, b+i]); }
     }
-    for (let k = sv; k < ringIndices.length - 1; k++) {
-      const a = ringIndices[k], b = ringIndices[k + 1];
-      for (let i = 0; i < su; i++) {
-        const ni = (i + 1) % su;
-        e.push([a + i, b + i]); e.push([a + i, a + ni]);
-        f.push([a + i, a + ni, b + ni, b + i]);
-      }
-    }
-    {
-      const last = ringIndices[ringIndices.length - 1];
-      for (let i = 0; i < su; i++) {
-        const ni = (i + 1) % su;
-        e.push([last + i, topPole]);
-        f.push([topPole, last + i, last + ni]);
-      }
-    }
+    for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([topPoleIdx, lastTopRing + i, lastTopRing + ni]); }
     return { vertices: v, edges: e, faces: f };
   }
-
   function torusKnotGeo() {
     const v = [], e = [], f = [];
     const seg = 48, tubeSeg = 6, R = 0.7, r = 0.22, p = 2, q = 3;
-    const centers = [], tangents = [];
+    const centers = [];
+    const tangents = [];
     for (let i = 0; i < seg; i++) {
       const t = (i/seg)*Math.PI*2;
       const cu = Math.cos(q*t);
-      centers.push(v3((R + r*cu)*Math.cos(p*t), r*Math.sin(q*t) + 0.9, (R + r*cu)*Math.sin(p*t)));
+      const c = v3((R + r*cu)*Math.cos(p*t), r*Math.sin(q*t) + 0.9, (R + r*cu)*Math.sin(p*t));
+      centers.push(c);
     }
     for (let i = 0; i < seg; i++) {
-      const prev = centers[(i - 1 + seg) % seg], next = centers[(i + 1) % seg];
+      const prev = centers[(i - 1 + seg) % seg];
+      const next = centers[(i + 1) % seg];
       tangents.push(vnorm(vsub(next, prev)));
     }
     for (let i = 0; i < seg; i++) {
       const T = tangents[i];
       const ref = Math.abs(T.y) > 0.9 ? v3(1, 0, 0) : v3(0, 1, 0);
-      const N = vnorm(vcross(T, ref)), B = vnorm(vcross(T, N));
+      const N = vnorm(vcross(T, ref));
+      const B = vnorm(vcross(T, N));
       for (let j = 0; j < tubeSeg; j++) {
         const a = (j/tubeSeg)*Math.PI*2;
-        v.push(vadd(centers[i], vadd(vscale(N, Math.cos(a)*r), vscale(B, Math.sin(a)*r))));
+        const offset = vadd(vscale(N, Math.cos(a)*r), vscale(B, Math.sin(a)*r));
+        v.push(vadd(centers[i], offset));
       }
     }
     for (let i = 0; i < seg; i++) {
       const ni = (i+1)%seg;
       for (let j = 0; j < tubeSeg; j++) {
         const nj = (j+1)%tubeSeg;
-        const a = i*tubeSeg + j, b = ni*tubeSeg + j;
-        const c = ni*tubeSeg + nj, d = i*tubeSeg + nj;
+        const a = i*tubeSeg + j;
+        const b = ni*tubeSeg + j;
+        const c = ni*tubeSeg + nj;
+        const d = i*tubeSeg + nj;
         e.push([a, b]); e.push([a, d]);
         f.push([a, b, c, d]);
       }
@@ -2730,22 +2718,32 @@
     return { vertices: v, edges: e, faces: f };
   }
 
+  // ---------- NEW SHAPE GENERATORS (ported from the compact file) ----------
+
+  // Extruded polygon: given a list of {x,z} points and a height, produce a prism.
   function extrudePolygon(pts, h) {
     const n = pts.length;
     const v = [], e = [], f = [];
+    // bottom + top rings
     for (let i = 0; i < n; i++) v.push(v3(pts[i].x, 0, pts[i].z));
     for (let i = 0; i < n; i++) v.push(v3(pts[i].x, h, pts[i].z));
-    const bc = v.length; v.push(v3(0, 0, 0));
-    const tc = v.length; v.push(v3(0, h, 0));
+    const bc = v.length; v.push(v3(0, 0, 0));  // bottom center
+    const tc = v.length; v.push(v3(0, h, 0));  // top center
     for (let i = 0; i < n; i++) {
       const ni = (i + 1) % n;
-      e.push([i, ni]); e.push([n + i, n + ni]); e.push([i, n + i]);
+      e.push([i, ni]);              // bottom ring
+      e.push([n + i, n + ni]);      // top ring
+      e.push([i, n + i]);           // vertical
+      // caps (triangulated with center)
       f.push([bc, ni, i]);
       f.push([tc, n + i, n + ni]);
+      // side quad
       f.push([i, n + i, n + ni, ni]);
     }
     return { vertices: v, edges: e, faces: f };
   }
+
+  // Radial extrusion: for each i in [0, n), radius r(i) and angle a(i)
   function radialExtrude(n, rFn, h) {
     const pts = [];
     for (let i = 0; i < n; i++) {
@@ -2755,10 +2753,24 @@
     }
     return extrudePolygon(pts, h);
   }
-  function starGeo(points) { return radialExtrude(points * 2, function (i) { return i % 2 === 0 ? 0.9 : 0.35; }, 1 + points * 0.05); }
-  function prismPolyGeo(n, h) { return radialExtrude(n, function () { return 0.9; }, h); }
-  function gearGeo(teeth) { return radialExtrude(teeth * 2, function (i) { return i % 2 === 0 ? 0.9 : 0.7; }, 0.6); }
+
+  function starGeo(points, h) {
+    // A star with `points` spikes: outer radius 0.9, inner radius 0.35
+    return radialExtrude(points * 2, function (i) { return i % 2 === 0 ? 0.9 : 0.35; }, 1 + points * 0.05);
+  }
+
+  function prismPolyGeo(n, h) {
+    // Regular polygon extruded
+    return radialExtrude(n, function () { return 0.9; }, h);
+  }
+
+  function gearGeo(teeth) {
+    // Alternating outer/inner to make gear-like silhouette
+    return radialExtrude(teeth * 2, function (i) { return i % 2 === 0 ? 0.9 : 0.7; }, 0.6);
+  }
+
   function coneVarGeo(seg, rFn, h) {
+    // Cone variant: last point is apex
     const v = [], e = [], f = [];
     for (let i = 0; i < seg; i++) {
       const a = (i / seg) * Math.PI * 2;
@@ -2775,7 +2787,11 @@
     }
     return { vertices: v, edges: e, faces: f };
   }
-  function cylinderVarGeo(seg, r, h) { return radialExtrude(seg, function () { return r; }, h); }
+
+  function cylinderVarGeo(seg, r, h) {
+    return radialExtrude(seg, function () { return r; }, h);
+  }
+
   function sphereVarGeo(su, sv, r) {
     const v = [], e = [], f = [];
     for (let j = 0; j <= sv; j++) {
@@ -2793,6 +2809,7 @@
     }
     return { vertices: v, edges: e, faces: f };
   }
+
   function boxVarGeo(sx, sy, sz) {
     const x = sx/2, y = sy, z = sz/2;
     const v = [
@@ -2803,112 +2820,144 @@
     const f = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
     return { vertices: v, edges: e, faces: f };
   }
-  function bakeParts(parts) {
-    const allVerts = [], allEdges = [], allFaces = [];
-    parts.forEach(function (part) {
-      const offset = allVerts.length;
-      part.geo.vertices.forEach(function (v) {
-        allVerts.push(vadd(rotateVec(v, part.rot || v3(0,0,0)), part.pos));
-      });
-      part.geo.edges.forEach(function (e) { allEdges.push([e[0] + offset, e[1] + offset]); });
-      part.geo.faces.forEach(function (f) { allFaces.push(f.map(function (i) { return i + offset; })); });
-    });
-    return { vertices: allVerts, edges: allEdges, faces: allFaces };
-  }
-  function humanoidGeo(H) {
+
+  // Humanoid: a set of parts (each with its own geo + relative position + relative rotation + scale)
+  // We build them as a "compound" shape using the same fused-group concept, but here we just build a single geo
+  // for simplicity: bake all parts into one big mesh with vertices already transformed into local space.
+  function humanoidGeo(heightVariant) {
+    const H = heightVariant;
     const parts = [];
-    const pushBox = function (sx, sy, sz, tx, ty, tz) { parts.push({ geo: boxVarGeo(sx, sy, sz), pos: v3(tx, ty, tz) }); };
-    const pushRad = function (n, rFn, h, tx, ty, tz) { parts.push({ geo: radialExtrude(n, rFn, h), pos: v3(tx, ty, tz) }); };
-    const pushSphere = function (su, sv, r, tx, ty, tz) { parts.push({ geo: sphereVarGeo(su, sv, r), pos: v3(tx, ty, tz) }); };
-    const y0 = H * 0.05, tY = y0 + H * 0.48, tW = H * 0.16, r = H * 0.024;
+    const pushBox = (sx, sy, sz, tx, ty, tz) => parts.push({ geo: boxVarGeo(sx, sy, sz), pos: v3(tx, ty, tz), rot: v3(0,0,0) });
+    const pushRad = (n, rFn, h, tx, ty, tz) => parts.push({ geo: radialExtrude(n, rFn, h), pos: v3(tx, ty, tz), rot: v3(0,0,0) });
+    const pushSphere = (su, sv, r, tx, ty, tz) => parts.push({ geo: sphereVarGeo(su, sv, r), pos: v3(tx, ty, tz), rot: v3(0,0,0) });
+
+    const y0 = H * 0.05;
+    const tY = y0 + H * 0.48;       // torso base y
+    const tW = H * 0.16;            // torso width
+    const r = H * 0.024;            // limb radius
+
+    // Torso (using a box)
     pushBox(tW, H * 0.28, H * 0.09, 0, tY, 0);
-    pushRad(8, function () { return r; }, H * 0.04, 0, tY + H * 0.28, 0);
+    // Neck (small cylinder)
+    pushRad(8, () => r, H * 0.04, 0, tY + H * 0.28, 0);
+    // Head (sphere)
     pushSphere(10, 8, H * 0.075, 0, tY + H * 0.32 + H * 0.05, 0);
+    // Hip
     pushBox(tW * 0.9, H * 0.08, H * 0.08, 0, tY - H * 0.08, 0);
-    [-1, 1].forEach(function (d) {
+
+    // Left and right
+    [-1, 1].forEach((d) => {
       const x = d * (tW / 2 + r * 0.5);
       const sY = tY + H * 0.28 - r * 2;
       const hx = d * (tW * 0.28);
+
+      // Shoulder + upper arm + elbow + lower arm + hand
       pushSphere(8, 6, r * 1.3, x, sY, 0);
-      pushRad(8, function () { return r; }, H * 0.16, x, sY - H * 0.16, 0);
+      pushRad(8, () => r, H * 0.16, x, sY - H * 0.16, 0);
       pushSphere(6, 4, r * 1.1, x, sY - H * 0.16, 0);
-      pushRad(8, function () { return r * 0.8; }, H * 0.14, x, sY - H * 0.3, 0);
+      pushRad(8, () => r * 0.8, H * 0.14, x, sY - H * 0.3, 0);
       pushBox(r * 1.2, r * 1.8, r * 0.5, x, sY - H * 0.34, 0);
-      pushRad(8, function () { return H * 0.038; }, H * 0.24, hx, tY - H * 0.32, 0);
+
+      // Thigh + knee + calf + foot
+      pushRad(8, () => H * 0.038, H * 0.24, hx, tY - H * 0.32, 0);
       pushSphere(6, 4, H * 0.04, hx, tY - H * 0.32, 0);
-      pushRad(8, function () { return H * 0.028; }, H * 0.22, hx, tY - H * 0.54, 0);
+      pushRad(8, () => H * 0.028, H * 0.22, hx, tY - H * 0.54, 0);
       pushBox(H * 0.04, H * 0.035, H * 0.09, hx, tY - H * 0.575, H * 0.02);
     });
+
+    // Bake all parts into a single geometry
     return bakeParts(parts);
   }
 
+  // Bake a list of {geo, pos, rot} parts into one combined mesh (in local space)
+  function bakeParts(parts) {
+    const allVerts = [];
+    const allEdges = [];
+    const allFaces = [];
+    parts.forEach((part) => {
+      const offset = allVerts.length;
+      part.geo.vertices.forEach((v) => {
+        const rotated = rotateVec(v, part.rot || v3(0,0,0));
+        const world = vadd(rotated, part.pos);
+        allVerts.push(world);
+      });
+      part.geo.edges.forEach((e) => allEdges.push([e[0] + offset, e[1] + offset]));
+      part.geo.faces.forEach((f) => allFaces.push(f.map((i) => i + offset)));
+    });
+    return { vertices: allVerts, edges: allEdges, faces: allFaces };
+  }
+
+  // ---------- GEO FACTORY (base shapes) ----------
   const GEO_FACTORY = {
     box: boxGeo, sphere: sphereGeo, cylinder: cylinderGeo, cone: coneGeo,
     torus: torusGeo, tetra: tetraGeo, octa: octaGeo, dodeca: dodecaGeo,
     icosa: icosaGeo, capsule: capsuleGeo, torusKnot: torusKnotGeo,
     pyramid: pyramidGeo, prism: prismGeo,
-    star5: function () { return starGeo(5); },
-    star6: function () { return starGeo(6); },
-    star8: function () { return starGeo(8); },
-    star10: function () { return starGeo(10); },
-    star12: function () { return starGeo(12); },
-    prism3: function () { return prismPolyGeo(3, 1.3); },
-    prism5: function () { return prismPolyGeo(5, 1.3); },
-    prism6: function () { return prismPolyGeo(6, 1.3); },
-    prism8: function () { return prismPolyGeo(8, 1.3); },
-    prism10: function () { return prismPolyGeo(10, 1.3); },
-    prism12: function () { return prismPolyGeo(12, 1.3); },
-    gear6: function () { return gearGeo(6); },
-    gear8: function () { return gearGeo(8); },
-    gear10: function () { return gearGeo(10); },
-    gear12: function () { return gearGeo(12); },
-    gear14: function () { return gearGeo(14); },
-    cone3: function () { return coneVarGeo(8, function () { return 0.5; }, 1.2); },
-    cone4: function () { return coneVarGeo(10, function () { return 0.7; }, 1.5); },
-    cone5: function () { return coneVarGeo(12, function () { return 0.9; }, 1.7); },
-    cone6: function () { return coneVarGeo(14, function () { return 1.1; }, 2.0); },
-    cone7: function () { return coneVarGeo(16, function () { return 1.3; }, 2.2); },
-    cyl1: function () { return cylinderVarGeo(8, 0.5, 1.0); },
-    cyl2: function () { return cylinderVarGeo(10, 0.6, 1.2); },
-    cyl3: function () { return cylinderVarGeo(12, 0.7, 1.4); },
-    cyl4: function () { return cylinderVarGeo(14, 0.8, 1.6); },
-    cyl5: function () { return cylinderVarGeo(16, 0.9, 1.8); },
-    cyl6: function () { return cylinderVarGeo(18, 1.0, 2.0); },
-    cyl7: function () { return cylinderVarGeo(20, 1.1, 2.2); },
-    cyl8: function () { return cylinderVarGeo(22, 1.2, 2.4); },
-    sph1: function () { return sphereVarGeo(8, 5, 0.5); },
-    sph2: function () { return sphereVarGeo(10, 6, 0.7); },
-    sph3: function () { return sphereVarGeo(12, 7, 0.9); },
-    sph4: function () { return sphereVarGeo(14, 8, 1.1); },
-    sph5: function () { return sphereVarGeo(16, 9, 1.3); },
-    sph6: function () { return sphereVarGeo(18, 10, 1.5); },
-    sph7: function () { return sphereVarGeo(20, 11, 1.7); },
-    sph8: function () { return sphereVarGeo(22, 12, 1.9); },
-    sph9: function () { return sphereVarGeo(10, 6, 0.6); },
-    sph10: function () { return sphereVarGeo(12, 7, 0.8); },
-    sph11: function () { return sphereVarGeo(14, 8, 1.0); },
-    sph12: function () { return sphereVarGeo(16, 9, 1.2); },
-    sph13: function () { return sphereVarGeo(18, 10, 1.4); },
-    sph14: function () { return sphereVarGeo(20, 11, 1.6); },
-    sph15: function () { return sphereVarGeo(22, 12, 1.8); },
-    box1: function () { return boxVarGeo(0.8, 0.6, 0.8); },
-    box2: function () { return boxVarGeo(1.0, 0.8, 1.0); },
-    box3: function () { return boxVarGeo(1.2, 1.0, 1.2); },
-    box4: function () { return boxVarGeo(1.4, 1.2, 1.4); },
-    box5: function () { return boxVarGeo(1.6, 1.4, 1.6); },
-    box6: function () { return boxVarGeo(1.8, 1.6, 1.8); },
-    box7: function () { return boxVarGeo(2.0, 1.8, 2.0); },
-    box8: function () { return boxVarGeo(2.2, 2.0, 2.2); },
-    box9: function () { return boxVarGeo(2.4, 2.2, 2.4); },
-    box10: function () { return boxVarGeo(2.6, 2.4, 2.6); },
-    humanoid_std: function () { return humanoidGeo(1.75); },
-    humanoid_tall: function () { return humanoidGeo(2.1); },
-    humanoid_sh: function () { return humanoidGeo(1.4); },
-    humanoid_ch: function () { return humanoidGeo(1.1); }
+    // New procedural shapes
+    star5: () => starGeo(5),
+    star6: () => starGeo(6),
+    star8: () => starGeo(8),
+    star10: () => starGeo(10),
+    star12: () => starGeo(12),
+    prism3: () => prismPolyGeo(3, 1.3),
+    prism5: () => prismPolyGeo(5, 1.3),
+    prism6: () => prismPolyGeo(6, 1.3),
+    prism8: () => prismPolyGeo(8, 1.3),
+    prism10: () => prismPolyGeo(10, 1.3),
+    prism12: () => prismPolyGeo(12, 1.3),
+    gear6: () => gearGeo(6),
+    gear8: () => gearGeo(8),
+    gear10: () => gearGeo(10),
+    gear12: () => gearGeo(12),
+    gear14: () => gearGeo(14),
+    cone3: () => coneVarGeo(8, () => 0.5, 1.2),
+    cone4: () => coneVarGeo(10, () => 0.7, 1.5),
+    cone5: () => coneVarGeo(12, () => 0.9, 1.7),
+    cone6: () => coneVarGeo(14, () => 1.1, 2.0),
+    cone7: () => coneVarGeo(16, () => 1.3, 2.2),
+    cyl1: () => cylinderVarGeo(8, 0.5, 1.0),
+    cyl2: () => cylinderVarGeo(10, 0.6, 1.2),
+    cyl3: () => cylinderVarGeo(12, 0.7, 1.4),
+    cyl4: () => cylinderVarGeo(14, 0.8, 1.6),
+    cyl5: () => cylinderVarGeo(16, 0.9, 1.8),
+    cyl6: () => cylinderVarGeo(18, 1.0, 2.0),
+    cyl7: () => cylinderVarGeo(20, 1.1, 2.2),
+    cyl8: () => cylinderVarGeo(22, 1.2, 2.4),
+    sph1: () => sphereVarGeo(8, 5, 0.5),
+    sph2: () => sphereVarGeo(10, 6, 0.7),
+    sph3: () => sphereVarGeo(12, 7, 0.9),
+    sph4: () => sphereVarGeo(14, 8, 1.1),
+    sph5: () => sphereVarGeo(16, 9, 1.3),
+    sph6: () => sphereVarGeo(18, 10, 1.5),
+    sph7: () => sphereVarGeo(20, 11, 1.7),
+    sph8: () => sphereVarGeo(22, 12, 1.9),
+    sph9: () => sphereVarGeo(10, 6, 0.6),
+    sph10: () => sphereVarGeo(12, 7, 0.8),
+    sph11: () => sphereVarGeo(14, 8, 1.0),
+    sph12: () => sphereVarGeo(16, 9, 1.2),
+    sph13: () => sphereVarGeo(18, 10, 1.4),
+    sph14: () => sphereVarGeo(20, 11, 1.6),
+    sph15: () => sphereVarGeo(22, 12, 1.8),
+    box1: () => boxVarGeo(0.8, 0.6, 0.8),
+    box2: () => boxVarGeo(1.0, 0.8, 1.0),
+    box3: () => boxVarGeo(1.2, 1.0, 1.2),
+    box4: () => boxVarGeo(1.4, 1.2, 1.4),
+    box5: () => boxVarGeo(1.6, 1.4, 1.6),
+    box6: () => boxVarGeo(1.8, 1.6, 1.8),
+    box7: () => boxVarGeo(2.0, 1.8, 2.0),
+    box8: () => boxVarGeo(2.2, 2.0, 2.2),
+    box9: () => boxVarGeo(2.4, 2.2, 2.4),
+    box10: () => boxVarGeo(2.6, 2.4, 2.6),
+    humanoid_std: () => humanoidGeo(1.75),
+    humanoid_tall: () => humanoidGeo(2.1),
+    humanoid_sh: () => humanoidGeo(1.4),
+    humanoid_ch: () => humanoidGeo(1.1)
   };
 
+  // Humanoid variants map to their humanoid_* factory
   const HUMANOID_TYPES = ['humanoid_std', 'humanoid_tall', 'humanoid_sh', 'humanoid_ch'];
-  const isHumanoid = function (t) { return HUMANOID_TYPES.indexOf(t) >= 0; };
+  const isHumanoid = (t) => HUMANOID_TYPES.indexOf(t) >= 0;
+
   function getHumanoidHeight(type) {
     if (type === 'humanoid_std') return 1.75;
     if (type === 'humanoid_tall') return 2.1;
@@ -2940,6 +2989,9 @@
   const GIZMO_MOVE_PX = 110;
   const GIZMO_SCALE_PX = 100;
 
+  // ============================================================
+  // PHYSICS PARAMETERS
+  // ============================================================
   const GRAVITY = 22;
   const LINEAR_DAMPING = 0.5;
   const ANGULAR_DAMPING = 1.2;
@@ -2966,14 +3018,17 @@
     }
     return body;
   }
+
   function getShapeRadiusApprox(shape) {
     try { return getShapeRadius(shape); }
     catch (e) { return 1; }
   }
+
   function ensureStretch(shape) {
     if (!shape.stretch) shape.stretch = v3(1, 1, 1);
     return shape.stretch;
   }
+
   function makeShape(type, x, z, colorIdx) {
     const geo = GEO_FACTORY[type] ? GEO_FACTORY[type]() : boxGeo();
     const col = (colorIdx !== undefined) ? COLORS[colorIdx] : activeColor;
@@ -3105,26 +3160,35 @@
     return { minX, minY, minZ, maxX, maxY, maxZ };
   }
 
-  // PHYSICS
+  // ============================================================
+  // PHYSICS — full rigid body
+  // ============================================================
   function stepPhysics(dt) {
     if (appMode !== 'test') return;
 
+    // 1. Integrate velocities
     for (let i = 0; i < shapes.length; i++) {
       const s = shapes[i];
       const b = getBody(s);
+
       b.vel.y -= GRAVITY * dt;
+
       const linDamp = Math.max(0, 1 - LINEAR_DAMPING * dt);
       b.vel.x *= linDamp;
       b.vel.y *= linDamp;
       b.vel.z *= linDamp;
+
       const angDamp = Math.max(0, 1 - ANGULAR_DAMPING * dt);
       b.angVel.x *= angDamp;
       b.angVel.y *= angDamp;
       b.angVel.z *= angDamp;
+
       s.pos.x += b.vel.x * dt;
       s.pos.y += b.vel.y * dt;
       s.pos.z += b.vel.z * dt;
+
       applyAngularVelocity(s, b.angVel, dt);
+
       if (Math.abs(b.vel.x) < SLEEP_LINEAR) b.vel.x = 0;
       if (Math.abs(b.vel.z) < SLEEP_LINEAR) b.vel.z = 0;
       if (Math.abs(b.vel.y) < SLEEP_LINEAR && b.vel.y > -0.3) b.vel.y = b.vel.y < 0 ? 0 : b.vel.y;
@@ -3133,13 +3197,17 @@
       if (Math.abs(b.angVel.z) < SLEEP_ANGULAR) b.angVel.z = 0;
     }
 
+    // 2. Ground contacts
     for (let i = 0; i < shapes.length; i++) {
       const s = shapes[i];
       const b = getBody(s);
       const aabb = getShapeAABB(s);
       if (aabb.minY < 0) {
         s.pos.y -= aabb.minY;
-        const contactPoint = v3((aabb.minX + aabb.maxX) / 2, 0, (aabb.minZ + aabb.maxZ) / 2);
+        const contactPoint = v3(
+          (aabb.minX + aabb.maxX) / 2, 0,
+          (aabb.minZ + aabb.maxZ) / 2
+        );
         const shapeCenter = getShapeCenter(s);
         const normal = v3(0, 1, 0);
         const r = vsub(contactPoint, shapeCenter);
@@ -3174,11 +3242,13 @@
       }
     }
 
+    // 3. Shape-shape contacts
     for (let pass = 0; pass < 3; pass++) {
       for (let i = 0; i < shapes.length; i++) {
         for (let j = i + 1; j < shapes.length; j++) {
           const a = shapes[i], b2 = shapes[j];
           if (a.group && b2.group && a.group === b2.group) continue;
+
           const A = getShapeAABB(a);
           const B = getShapeAABB(b2);
           const overlapX = Math.min(A.maxX, B.maxX) - Math.max(A.minX, B.minX);
@@ -3197,6 +3267,7 @@
               normal = v3(0, 0, B.maxZ - A.maxZ > A.minZ - B.minZ ? 1 : -1);
               penetration = overlapZ;
             }
+
             const totalInvMass = getBody(a).invMass + getBody(b2).invMass;
             if (totalInvMass < 1e-6) continue;
             const aShare = getBody(a).invMass / totalInvMass;
@@ -3207,11 +3278,13 @@
             b2.pos.x += normal.x * penetration * bShare;
             b2.pos.y += normal.y * penetration * bShare;
             b2.pos.z += normal.z * penetration * bShare;
+
             const contactPoint = v3(
               (Math.max(A.minX, B.minX) + Math.min(A.maxX, B.maxX)) / 2,
               (Math.max(A.minY, B.minY) + Math.min(A.maxY, B.maxY)) / 2,
               (Math.max(A.minZ, B.minZ) + Math.min(A.maxZ, B.maxZ)) / 2
             );
+
             const ca = getShapeCenter(a);
             const cb = getShapeCenter(b2);
             const ra = vsub(contactPoint, ca);
@@ -3223,6 +3296,7 @@
             const relVel = vsub(vaContact, vbContact);
             const vn = vdot(relVel, normal);
             if (vn > 0) continue;
+
             const raCrossN = vcross(ra, normal);
             const rbCrossN = vcross(rb, normal);
             const effA = ba.invMass + vdot(vcross(v3(
@@ -3237,9 +3311,11 @@
             ), rb), normal);
             const effMass = effA + effB;
             if (effMass < 1e-6) continue;
+
             const j = -(1 + bounceFactor) * vn / effMass;
             applyImpulse(a, vscale(normal, -j), ra);
             applyImpulse(b2, vscale(normal, j), rb);
+
             const newVa = vadd(ba.vel, vcross(ba.angVel, ra));
             const newVb = vadd(bb.vel, vcross(bb.angVel, rb));
             const newRel = vsub(newVa, newVb);
@@ -3258,6 +3334,7 @@
       }
     }
 
+    // 4. Clamp positions
     for (let i = 0; i < shapes.length; i++) {
       const s = shapes[i];
       if (s.pos.x < -25) { s.pos.x = -25; getBody(s).vel.x = 0; }
@@ -3268,6 +3345,7 @@
       if (s.pos.y > MAX_Y) { s.pos.y = MAX_Y; if (getBody(s).vel.y > 0) getBody(s).vel.y = 0; }
     }
   }
+
   function applyImpulse(shape, impulse, r) {
     const b = getBody(shape);
     b.vel.x += impulse.x * b.invMass;
@@ -3278,13 +3356,16 @@
     b.angVel.y += torque.y * b.invInertia.y;
     b.angVel.z += torque.z * b.invInertia.z;
   }
+
   function applyAngularVelocity(shape, angVel, dt) {
     shape.rot.x += angVel.x * dt;
     shape.rot.y += angVel.y * dt;
     shape.rot.z += angVel.z * dt;
   }
 
+  // ============================================================
   // RENDER
+  // ============================================================
   function render() {
     if (canvas.width !== W || canvas.height !== H) resizeCanvas();
     ctx.clearRect(0, 0, W, H);
@@ -3353,6 +3434,7 @@
       ctx.setLineDash([]);
     });
 
+    // Gizmo
     if (gizmo.mode && selectedShape) {
       const center = getShapeCenter(selectedShape);
       const cp = project(center, view);
@@ -3574,7 +3656,9 @@
     }
   }
 
+  // ============================================================
   // PICKING
+  // ============================================================
   function screenRay(mx, my) {
     const view = getView();
     const f = (H / 2) / Math.tan(camera.fov / 2);
@@ -3610,6 +3694,7 @@
     });
     return best;
   }
+
   function pickGizmo(mx, my, view) {
     if (!gizmo.mode || !selectedShape) return null;
     const center = getShapeCenter(selectedShape);
@@ -3662,7 +3747,9 @@
     return null;
   }
 
+  // ============================================================
   // SELECTION
+  // ============================================================
   function clearSelection() {
     selectedShapes.clear(); selectedShape = null;
     gizmo.mode = null; gizmo.dragAxis = null; gizmo.dragStart = null;
@@ -3700,7 +3787,9 @@
     }
   }
 
+  // ============================================================
   // GIZMO POPUP
+  // ============================================================
   const gizmoPopup = document.getElementById('gizmoPopup');
   const popMove = document.getElementById('popMove');
   const popRotate = document.getElementById('popRotate');
@@ -3755,7 +3844,9 @@
     if (gizmoPopup.classList.contains('visible') && selectedShape && !mode) showGizmoPopup();
   }
 
+  // ============================================================
   // CONTEXT MENU
+  // ============================================================
   const contextMenu = document.getElementById('contextMenu');
   const ctxTitle = document.getElementById('ctxTitle');
   const ctxGroup = document.getElementById('ctxGroup');
@@ -3806,7 +3897,9 @@
   ctxSelectAll.addEventListener('click', function () { hideContextMenu(); setSelection(shapes.slice()); });
   ctxDelete.addEventListener('click', function () { hideContextMenu(); deleteSelected(); persistCurrentShapes(); });
 
+  // ============================================================
   // GROUP / FUSE
+  // ============================================================
   function groupShapes(list) {
     if (list.length < 2) return;
     const gid = uid('grp');
@@ -3859,7 +3952,9 @@
     };
   }
 
+  // ============================================================
   // GROUP DIALOG
+  // ============================================================
   const groupDialog = document.getElementById('groupDialog');
   const gdTitle = document.getElementById('gdTitle');
   const gdSub = document.getElementById('gdSub');
@@ -3917,7 +4012,9 @@
     closeGroupDialog();
   });
 
+  // ============================================================
   // UNGROUP BUTTON
+  // ============================================================
   const ungroupBtn = document.getElementById('ungroupBtn');
   function updateUngroupButton() {
     const hasGroup = Array.from(selectedShapes).some(function (s) { return !!s.group; });
@@ -3925,7 +4022,9 @@
   }
   ungroupBtn.addEventListener('click', ungroupSelected);
 
-  // SHAPES LIBRARY (locked for guests)
+  // ============================================================
+  // SHAPES LIBRARY (new)
+  // ============================================================
   const shapesLibOverlay = document.getElementById('shapesLibOverlay');
   const libClose = document.getElementById('libClose');
   const libSearch = document.getElementById('libSearch');
@@ -3934,17 +4033,18 @@
   const libCount = document.getElementById('libCount');
   const libGhost = document.getElementById('libGhost');
 
+  // Group shapes into categories for filtering
   const LIB_CATEGORIES = [
     { id: 'all', label: 'All' },
-    { id: 'basic', label: 'Basic', match: function (n) { return ['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'pyramid', 'prism', 'tetra', 'octa', 'dodeca', 'icosa', 'torusKnot'].indexOf(n) >= 0; } },
-    { id: 'spheres', label: 'Spheres', match: function (n) { return n.indexOf('sph') === 0; } },
-    { id: 'boxes', label: 'Boxes', match: function (n) { return n.indexOf('box') === 0; } },
-    { id: 'cylinders', label: 'Cylinders', match: function (n) { return n.indexOf('cyl') === 0; } },
-    { id: 'cones', label: 'Cones', match: function (n) { return n.indexOf('cone') === 0; } },
-    { id: 'stars', label: 'Stars', match: function (n) { return n.indexOf('star') === 0; } },
-    { id: 'prisms', label: 'Prisms', match: function (n) { return n.indexOf('prism') === 0; } },
-    { id: 'gears', label: 'Gears', match: function (n) { return n.indexOf('gear') === 0; } },
-    { id: 'humanoids', label: 'Humanoids', match: function (n) { return n.indexOf('humanoid') === 0; } }
+    { id: 'basic', label: 'Basic', match: (n) => ['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'pyramid', 'prism', 'tetra', 'octa', 'dodeca', 'icosa', 'torusKnot'].indexOf(n) >= 0 },
+    { id: 'spheres', label: 'Spheres', match: (n) => n.indexOf('sph') === 0 },
+    { id: 'boxes', label: 'Boxes', match: (n) => n.indexOf('box') === 0 },
+    { id: 'cylinders', label: 'Cylinders', match: (n) => n.indexOf('cyl') === 0 },
+    { id: 'cones', label: 'Cones', match: (n) => n.indexOf('cone') === 0 },
+    { id: 'stars', label: 'Stars', match: (n) => n.indexOf('star') === 0 },
+    { id: 'prisms', label: 'Prisms', match: (n) => n.indexOf('prism') === 0 },
+    { id: 'gears', label: 'Gears', match: (n) => n.indexOf('gear') === 0 },
+    { id: 'humanoids', label: 'Humanoids', match: (n) => n.indexOf('humanoid') === 0 }
   ];
   let libActiveCat = 'all';
 
@@ -3972,9 +4072,10 @@
     if (name === 'prism') return '◣';
     return '◇';
   }
+
   function buildLibCats() {
     libCats.innerHTML = '';
-    LIB_CATEGORIES.forEach(function (cat) {
+    LIB_CATEGORIES.forEach((cat) => {
       const el = document.createElement('div');
       el.className = 'cat-pill' + (cat.id === libActiveCat ? ' active' : '');
       el.textContent = cat.label;
@@ -3986,14 +4087,15 @@
       libCats.appendChild(el);
     });
   }
+
   function renderLibGrid() {
     const q = (libSearch.value || '').trim().toLowerCase();
     const allNames = Object.keys(GEO_FACTORY);
-    const catDef = LIB_CATEGORIES.find(function (c) { return c.id === libActiveCat; }) || LIB_CATEGORIES[0];
+    const catDef = LIB_CATEGORIES.find((c) => c.id === libActiveCat) || LIB_CATEGORIES[0];
 
     let names = allNames;
     if (catDef.match) names = names.filter(catDef.match);
-    if (q) names = names.filter(function (n) { return n.toLowerCase().indexOf(q) >= 0; });
+    if (q) names = names.filter((n) => n.toLowerCase().indexOf(q) >= 0);
 
     libGrid.innerHTML = '';
     if (names.length === 0) {
@@ -4003,7 +4105,7 @@
     }
     libCount.textContent = names.length + ' shape' + (names.length === 1 ? '' : 's');
 
-    names.forEach(function (n) {
+    names.forEach((n) => {
       const item = document.createElement('div');
       item.className = 'lib-item';
       item.draggable = true;
@@ -4011,6 +4113,7 @@
       item.innerHTML = '<div class="lib-ic">' + getLibIcon(n) + '</div><div class="lib-lb">' + n + '</div>';
 
       item.addEventListener('click', function () {
+        // Add at scene origin with a slight random offset
         if (appMode !== 'build') { showToast('Switch to Build mode to add shapes', 'error'); return; }
         const angle = Math.random() * Math.PI * 2;
         const r = 1 + Math.random() * 3;
@@ -4031,6 +4134,7 @@
         item.classList.add('dragging');
         libGhost.textContent = getLibIcon(n) + '  ' + n;
         libGhost.classList.add('visible');
+        // Keep the modal open so the user can drag onto the canvas
         shapesLibOverlay.style.opacity = '0.35';
       });
       item.addEventListener('dragend', function () {
@@ -4042,6 +4146,7 @@
       libGrid.appendChild(item);
     });
   }
+
   function openShapesLib() {
     if (isGuest()) { showLoginRequired('the Shape Library'); return; }
     shapesLibOverlay.classList.add('visible');
@@ -4049,7 +4154,7 @@
     libActiveCat = 'all';
     buildLibCats();
     renderLibGrid();
-    setTimeout(function () { libSearch.focus(); }, 60);
+    setTimeout(() => libSearch.focus(), 60);
   }
   function closeShapesLib() {
     shapesLibOverlay.classList.remove('visible');
@@ -4063,6 +4168,7 @@
   });
   libSearch.addEventListener('input', renderLibGrid);
 
+  // Global drag ghost tracking
   window.addEventListener('dragover', function (e) {
     if (libGhost.classList.contains('visible')) {
       libGhost.style.left = e.clientX + 'px';
@@ -4070,7 +4176,9 @@
     }
   });
 
-  // INPUT — with snap
+  // ============================================================
+  // INPUT
+  // ============================================================
   let mode = null;
   let lastMouse = { x: 0, y: 0 };
   let dragOffset = v3(0, 0, 0);
@@ -4121,6 +4229,8 @@
         lastMouse = { x: mx, y: my };
         const center = getShapeCenter(selectedShape);
         const cp = project(center, view);
+        const camDist = vlen(vsub(center, view.eye));
+        const f = (H / 2) / Math.tan(camera.fov / 2);
 
         if (gizmo.mode === 'rotate') {
           gizmo.dragStart = {
@@ -4357,7 +4467,9 @@
     refreshPopupPosition();
   }, { passive: false });
 
+  // ============================================================
   // KEYBOARD
+  // ============================================================
   window.addEventListener('keydown', function (e) {
     if (!projectScreen.classList.contains('active')) return;
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') { e.preventDefault(); setSelection(shapes.slice()); return; }
@@ -4395,9 +4507,9 @@
       selectedShapes.forEach(function (s) { s.pos.y = Math.max(0, s.pos.y - Y_STEP); });
       handled = true;
     } else if (e.key === 'ArrowLeft')  { selectedShapes.forEach(function (s) { s.rot.y = snapRotation(s.rot.y - step); }); handled = true; }
-    else if (e.key === 'ArrowRight') { selectedShapes.forEach(function (s) { s.rot.y = snapRotation(s.rot.y + step); }); handled = true; }
-    else if (e.key === 'ArrowUp')    { selectedShapes.forEach(function (s) { s.rot.x = snapRotation(s.rot.x - step); }); handled = true; }
-    else if (e.key === 'ArrowDown')  { selectedShapes.forEach(function (s) { s.rot.x = snapRotation(s.rot.x + step); }); handled = true; }
+    else if (e.key === 'ArrowRight')   { selectedShapes.forEach(function (s) { s.rot.y = snapRotation(s.rot.y + step); }); handled = true; }
+    else if (e.key === 'ArrowUp')      { selectedShapes.forEach(function (s) { s.rot.x = snapRotation(s.rot.x - step); }); handled = true; }
+    else if (e.key === 'ArrowDown')    { selectedShapes.forEach(function (s) { s.rot.x = snapRotation(s.rot.x + step); }); handled = true; }
     if (handled) { e.preventDefault(); updateStatus(); syncSlider(); showGizmoPopup(); persistCurrentShapes(); }
   });
 
@@ -4532,6 +4644,9 @@
     });
   })();
 
+  // ============================================================
+  // QUICK SHAPE GRID (existing sidebar)
+  // ============================================================
   const SHAPE_LIST = [
     { type: 'box', icon: '■' }, { type: 'sphere', icon: '●' },
     { type: 'cylinder', icon: '⬭' }, { type: 'cone', icon: '▲' },
@@ -4609,7 +4724,9 @@
     if (shapesLibOverlay.classList.contains('visible')) closeShapesLib();
   });
 
+  // ============================================================
   // INIT
+  // ============================================================
   let lastTime = performance.now();
   function loop(now) {
     const dt = Math.min(0.033, (now - lastTime) / 1000);
