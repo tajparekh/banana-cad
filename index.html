@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Banana CAD · gear meshing enhanced</title>
+<title>Banana CAD · Complete Studio</title>
 <style>
   * { box-sizing: border-box; user-select: none; }
   html, body {
@@ -933,6 +933,353 @@
     white-space: nowrap;
   }
   #libGhost.visible { display: block; }
+
+  /* ========================================================== */
+  /* CONSOLIDATED SUBSYSTEM CSS (Dimensions, Snap, Modal, Sketch) */
+  /* ========================================================== */
+  /* v2: Dimension Measurement Panel & Negative Shapes */
+  .dimension-panel {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: rgba(30, 30, 50, .95);
+    border: 1px solid #7a5aff;
+    border-radius: 12px;
+    padding: 6px 14px;
+    box-shadow: 0 4px 20px rgba(122, 90, 255, .35);
+    flex-shrink: 0;
+  }
+  .dimension-panel.visible { display: flex; }
+  .dim-label {
+    color: #c0b0ff;
+    font-size: .68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .dim-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #18182b;
+    border: 1px solid #4a4a7a;
+    border-radius: 8px;
+    padding: 2px 6px;
+  }
+  .dim-axis {
+    font-size: .65rem;
+    font-weight: 800;
+    width: 14px;
+    text-align: center;
+  }
+  .dim-axis.x-axis { color: #ff6b6b; }
+  .dim-axis.y-axis { color: #50c878; }
+  .dim-axis.z-axis { color: #6b8eff; }
+  .dim-group input {
+    width: 50px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    text-align: right;
+    outline: none;
+  }
+  .dim-close {
+    background: transparent;
+    border: 1px solid #4a4a7a;
+    color: #8a8ab8;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  .negative-toggle {
+    background: linear-gradient(135deg, #3a2a5a, #8a6af7);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(138, 106, 247, .35);
+    transition: all .15s;
+  }
+  .negative-toggle.active {
+    background: linear-gradient(135deg, #7a2a5a, #f76a8a);
+    box-shadow: 0 3px 10px rgba(247, 106, 138, .45);
+  }
+  .negative-badge {
+    position: absolute;
+    top: 78px;
+    left: 14px;
+    color: #e0d0ff;
+    font-size: .65rem;
+    font-weight: 700;
+    background: rgba(90, 50, 140, .9);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #af6ff7;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+  }
+
+  /* v3: Snap Panel (Magnetic alignment) */
+  .snap-panel {
+    position: absolute;
+    top: 60px;
+    right: 14px;
+    width: 185px;
+    background: rgba(26, 26, 46, .95);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .snap-panel.collapsed { transform: translateX(calc(100% - 40px)); }
+  .snap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, .06);
+    cursor: pointer;
+    user-select: none;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #ffd966;
+  }
+  .snap-header .snap-ico { font-size: 14px; }
+  .snap-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .snap-panel.collapsed .snap-body { display: none; }
+  .snap-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: .68rem;
+    color: #a0a0c0;
+  }
+  .snap-row input[type=number] {
+    width: 52px;
+    background: rgba(0, 0, 0, .3);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 6px;
+    padding: 2px 6px;
+    color: #fff;
+    font-size: .68rem;
+  }
+
+  /* v4: Shape Catalog Modal & Custom Builds */
+  .shape-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(.95);
+    width: 88vw;
+    max-width: 860px;
+    max-height: 80vh;
+    background: rgba(22, 22, 40, .96);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, .15);
+    border-radius: 20px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.8);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 1000;
+  }
+  .shape-modal.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .shape-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .shape-modal-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .shape-modal-close {
+    background: rgba(255,255,255,.08);
+    border: none;
+    color: #c0c0e0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .shape-search {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #fff;
+    font-size: .78rem;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .shape-modal-tabs { display: flex; gap: 6px; }
+  .shape-modal-tab {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    color: #a0a0c0;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: .7rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .shape-modal-tab.active {
+    background: rgba(107,142,255,.2);
+    border-color: rgba(107,142,255,.4);
+    color: #c0d0ff;
+  }
+  .shape-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+    gap: 8px;
+    overflow-y: auto;
+    padding: 4px;
+    flex: 1;
+    min-height: 0;
+  }
+  .shape-modal-item {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .15s;
+    aspect-ratio: 1;
+    position: relative;
+  }
+  .shape-modal-item:hover {
+    background: rgba(107,142,255,.15);
+    border-color: rgba(107,142,255,.35);
+    transform: translateY(-2px);
+  }
+  .shape-modal-item.build {
+    border-color: rgba(220,140,220,.35);
+    background: rgba(220,140,220,.05);
+  }
+  .shape-modal-item .icon { font-size: 24px; line-height: 1; }
+  .shape-modal-item .lbl {
+    font-size: .55rem;
+    color: #a0a0c0;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: 600;
+  }
+  .shape-modal-item .del-build {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(220,80,80,.35);
+    border: none;
+    color: #ffb0b0;
+    font-size: .65rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .shape-modal-item.build:hover .del-build { display: flex; }
+  .modal-overlay-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    z-index: 999;
+  }
+  .modal-overlay-bg.open { opacity: 1; pointer-events: all; }
+
+  /* d6: Smart Sketch Canvas Overlay & Panel */
+  .sketch-badge {
+    position: absolute;
+    top: 140px;
+    left: 14px;
+    font-size: .65rem;
+    font-weight: 700;
+    color: #50c878;
+    background: rgba(20, 50, 30, .85);
+    border: 1px solid rgba(80, 200, 120, .4);
+    padding: 4px 12px;
+    border-radius: 20px;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+  }
+  #sketchOverlayCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    z-index: 15;
+    cursor: crosshair;
+  }
+  #sketchOverlayCanvas.active { display: block; }
+  .sketch-panel {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(22, 22, 40, .95);
+    border: 1px solid rgba(80, 200, 120, .4);
+    border-radius: 16px;
+    padding: 8px 16px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.6);
+    z-index: 30;
+  }
+  .sketch-panel.visible { display: flex; }
+  .sketch-panel .recog-badge {
+    background: rgba(80, 200, 120, .15);
+    border: 1px solid rgba(80, 200, 120, .3);
+    color: #a0ffc0;
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
 </style>
 </head>
 <body>
@@ -1032,6 +1379,24 @@
       <button class="gear-spin-btn active" id="gearSpinToggle">⏸ Pause</button>
     </div>
 
+    
+    <!-- Precision Features & Controls -->
+    <button class="topbar-action negative-toggle" id="negativeToggleBtn" title="Toggle negative (hole) shape mode">⬤ Negative</button>
+    <button class="topbar-action" id="dimPanelToggleBtn" title="Precision Real-Time Calipers">📐 Dimensions</button>
+    <button class="topbar-action" id="snapToggleBtn" title="Precision Magnetic Snapping">🧲 Snap</button>
+    <button class="topbar-action" id="shapeModalBtn" title="Shapes & Custom Builds Library">📦 Catalog</button>
+    <button class="topbar-action" id="saveBuildBtn" title="Save selected shape/assembly to Builds Library">💾 Save Build</button>
+    <button class="topbar-action" id="sketchBtn" title="2D Smart Sketch to 3D Extrusion">✏️ Smart Sketch</button>
+
+    <!-- Dimension Caliper Inputs Panel -->
+    <div class="dimension-panel" id="dimensionPanel">
+      <div class="dim-label"><span class="dim-icon">📐</span> Calipers</div>
+      <div class="dim-group"><span class="dim-axis x-axis">X</span><input type="number" id="dimX" step="0.1" min="0.01" value="1"></div>
+      <div class="dim-group"><span class="dim-axis y-axis">Y</span><input type="number" id="dimY" step="0.1" min="0.01" value="1"></div>
+      <div class="dim-group"><span class="dim-axis z-axis">Z</span><input type="number" id="dimZ" step="0.1" min="0.01" value="1"></div>
+      <button class="dim-close" id="dimClose">✕</button>
+    </div>
+
     <button class="topbar-action shapes-lib" id="shapesLibBtn" title="Open the big shape library">📦 Library</button>
     <button class="topbar-action import" id="importBtn" title="Import shapes">📥 Import</button>
     <button class="topbar-action ungroup" id="ungroupBtn" title="Ungroup selected group" style="display:none;">🔓 Ungroup</button>
@@ -1102,6 +1467,42 @@
 
       <div class="canvas-wrapper">
         <canvas id="mainCanvas"></canvas>
+      <!-- d6: Smart Sketch Canvas Overlay -->
+      <canvas id="sketchOverlayCanvas"></canvas>
+      
+      <!-- v2: Negative Badge -->
+      <div class="negative-badge" id="negativeBadge">⬤ NEGATIVE HOLE MODE</div>
+      
+      <!-- d6: Sketch Badge -->
+      <div class="sketch-badge" id="sketchBadge">✏️ SMART SKETCH MODE</div>
+      
+      <!-- v3: Snap Panel -->
+      <div class="snap-panel collapsed" id="snapPanel">
+        <div class="snap-header" id="snapHeader">
+          <span><span class="snap-ico">🧲</span> Precision Snap</span>
+          <span id="snapChevron">▸</span>
+        </div>
+        <div class="snap-body" id="snapBody">
+          <div class="snap-row"><label><input type="checkbox" id="snapMoveToggle" checked> Move (m)</label><input type="number" id="snapMoveInput" step="0.1" min="0.01" value="0.5"></div>
+          <div class="snap-row"><label><input type="checkbox" id="snapRotToggle" checked> Rot (°)</label><input type="number" id="snapRotInput" step="5" min="1" value="15"></div>
+          <div class="snap-row"><label><input type="checkbox" id="snapScaleToggle" checked> Scale</label><input type="number" id="snapScaleInput" step="0.05" min="0.01" value="0.1"></div>
+        </div>
+      </div>
+      
+      <!-- d6: Smart Sketch Panel -->
+      <div class="sketch-panel" id="sketchPanel">
+        <span style="font-size:.75rem; font-weight:700; color:#50c878;">✏️ Smart Sketch</span>
+        <span class="recog-badge" id="recogLabel">Draw profile...</span>
+        <div class="group" style="margin:0;">
+          <label style="font-size:.65rem;">Height</label>
+          <input type="range" id="sketchHeight" min="0.2" max="5" step="0.1" value="1.0" style="width:70px;">
+          <span class="scale-value" id="sketchHeightVal" style="min-width:32px; padding:2px 6px;">1.0</span>
+        </div>
+        <button class="topbar-action" id="sketchClear" style="padding:4px 10px;">Clear</button>
+        <button class="topbar-action" id="sketchFinish" style="background:#50c878; color:#0f0f1a; font-weight:700; padding:4px 12px;">Extrude 3D</button>
+        <button class="dim-close" id="sketchClose">✕</button>
+      </div>
+
         <div class="mode-badge build" id="modeBadge">🔨 Build Mode</div>
         <div class="hint">right-click for group/fuse · gizmos: move/rotate/scale · scroll zoom</div>
         <div class="multi-badge" id="multiBadge">✱ multi-selection</div>
@@ -3450,21 +3851,63 @@
     if (t < 0) return null;
     return vadd(ray.origin, vscale(ray.dir, t));
   }
+  function pointInPoly(x, y, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].x, yi = pts[i].y;
+      const xj = pts[j].x, yj = pts[j].y;
+      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
   function pickShape(mx, my) {
     const view = getView();
-    let best = null, bestDist = 45;
-    shapes.forEach(function (shape) {
+    let bestFaceShape = null, bestFaceDepth = Infinity;
+    let bestDistShape = null, bestDist = 70;
+
+    for (let sIdx = shapes.length - 1; sIdx >= 0; sIdx--) {
+      const shape = shapes[sIdx];
+      const wverts = getWorldVertices(shape);
+      if (!wverts || wverts.length === 0) continue;
+      const projVerts = wverts.map(function (v) { return project(v, view); });
+
+      // 1. Polygon face containment test
+      if (shape.geo && shape.geo.faces) {
+        for (let fIdx = 0; fIdx < shape.geo.faces.length; fIdx++) {
+          const face = shape.geo.faces[fIdx];
+          const facePts = face.map(function (i) { return projVerts[i]; }).filter(Boolean);
+          if (facePts.length >= 3 && pointInPoly(mx, my, facePts)) {
+            let avgDepth = 0;
+            facePts.forEach(function (p) { avgDepth += p.depth; });
+            avgDepth /= facePts.length;
+            if (avgDepth < bestFaceDepth) {
+              bestFaceDepth = avgDepth;
+              bestFaceShape = shape;
+            }
+          }
+        }
+      }
+
+      // 2. Proximity fallback (distance to center or any vertex)
       const center = getShapeCenter(shape);
-      const p = project(center, view);
-      if (!p) return;
-      const d = Math.hypot(p.x - mx, p.y - my);
-      const maxR = getShapeRadius(shape);
-      const camDist = vlen(vsub(center, view.eye));
-      const f = (H / 2) / Math.tan(camera.fov / 2);
-      const screenR = (maxR * f) / camDist + 10;
-      if (d < screenR && d < bestDist) { bestDist = d; best = shape; }
-    });
-    return best;
+      const cp = project(center, view);
+      if (cp) {
+        const d = Math.hypot(cp.x - mx, cp.y - my);
+        if (d < bestDist) { bestDist = d; bestDistShape = shape; }
+      }
+      for (let vIdx = 0; vIdx < projVerts.length; vIdx++) {
+        const vp = projVerts[vIdx];
+        if (vp) {
+          const vd = Math.hypot(vp.x - mx, vp.y - my);
+          if (vd < bestDist) { bestDist = vd; bestDistShape = shape; }
+        }
+      }
+    }
+
+    if (bestFaceShape) return bestFaceShape;
+    return bestDistShape;
   }
 
   function pickGizmo(mx, my, view) {
@@ -3536,11 +3979,13 @@
     gizmo.mode = null; gizmo.dragAxis = null; gizmo.dragStart = null;
     updateStatus(); syncSlider(); updateDeleteButton(); updatePopupButtons();
     updateUngroupButton();
-    if (selectedShape) showGizmoPopup(); else hideGizmoPopup();
+    if (selectedShape) showGizmoPopup(); else hideGizmoPopup(); refreshDimensionInputs();
     updateGearBadge();
   }
   function toggleSelection(shape) {
     if (selectedShapes.has(shape)) {
+        drawMeasurementGuides(shape, view);
+
       selectedShapes.delete(shape);
       if (selectedShape === shape) {
         const arr = Array.from(selectedShapes);
@@ -3549,7 +3994,7 @@
     } else { selectedShapes.add(shape); selectedShape = shape; }
     updateStatus(); syncSlider(); updateDeleteButton(); updatePopupButtons();
     updateUngroupButton();
-    if (selectedShape) showGizmoPopup(); else hideGizmoPopup();
+    if (selectedShape) showGizmoPopup(); else hideGizmoPopup(); refreshDimensionInputs();
   }
   function selectShape(shape, expandToGroup) {
     if (expandToGroup && shape.group) {
@@ -3580,8 +4025,8 @@
     const screenR = (maxR * f) / camDist;
     let px = p.x + screenR + 16;
     let py = p.y - 50;
-    const wrapper = canvas.parentElement;
-    const rect = wrapper.getBoundingClientRect();
+    const wrapper = canvas.parentElement || canvas;
+    const rect = (wrapper && wrapper.getBoundingClientRect) ? wrapper.getBoundingClientRect() : { width: W, height: H };
     px = Math.max(10, Math.min(rect.width - 150, px));
     py = Math.max(10, Math.min(rect.height - 170, py));
     gizmoPopup.style.left = px + 'px';
@@ -3665,6 +4110,7 @@
     setSelection([fused]);
     persistCurrentShapes();
     showToast('Fused ' + list.length + ' shapes into one');
+    saveBuildFromShape(fused);
   });
   ctxUngroup.addEventListener('click', function () { hideContextMenu(); ungroupSelected(); });
   ctxSelectAll.addEventListener('click', function () { hideContextMenu(); setSelection(shapes.slice()); });
@@ -3780,6 +4226,7 @@
         setSelection([fused]);
         persistCurrentShapes();
         showToast('Fused ' + list.length + ' shapes into one');
+    saveBuildFromShape(fused);
       }
     }
     closeGroupDialog();
@@ -3954,9 +4401,10 @@
   let dragStartMouseY = 0;
   let dragStartPositions = null;
 
+  const isMac = ((typeof navigator !== 'undefined' && (navigator.platform || navigator.userAgent)) || '').toUpperCase().indexOf('MAC') >= 0;
   (function detectMod() {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    document.getElementById('modKey').textContent = isMac ? '⌘' : 'Ctrl';
+    const el = document.getElementById('modKey');
+    if (el) el.textContent = isMac ? '⌘' : 'Ctrl';
   })();
 
   canvas.addEventListener('contextmenu', function (e) {
@@ -3970,7 +4418,7 @@
   });
 
   canvas.addEventListener('mousedown', function (e) {
-    if (e.button === 0 && e.ctrlKey && navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+    if (e.button === 0 && e.ctrlKey && isMac) {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -4102,9 +4550,9 @@
         gizmo.dragStart.rotSnapshots.forEach(function (snap) {
           const s = snap.shape;
           const r = snap.rot;
-          if (axisLabel === 'X') s.rot.x = r.x + deltaAng;
-          else if (axisLabel === 'Y') s.rot.y = r.y + deltaAng;
-          else if (axisLabel === 'Z') s.rot.z = r.z + deltaAng;
+          if (axisLabel === 'X') s.rot.x = snapRotation(r.x + deltaAng);
+          else if (axisLabel === 'Y') s.rot.y = snapRotation(r.y + deltaAng);
+          else if (axisLabel === 'Z') s.rot.z = snapRotation(r.z + deltaAng);
         });
         updateStatus(); showGizmoPopup();
       } else if (gizmo.mode === 'scale') {
@@ -4120,7 +4568,7 @@
           if (axisLabel === 'X') newVal = base.x * factor;
           else if (axisLabel === 'Y') newVal = base.y * factor;
           else newVal = base.z * factor;
-          newVal = Math.max(0.15, Math.min(5, newVal));
+          newVal = snapScaleValue(Math.max(0.15, Math.min(5, newVal)));
           if (axisLabel === 'X') st.x = newVal;
           else if (axisLabel === 'Y') st.y = newVal;
           else st.z = newVal;
@@ -4145,9 +4593,10 @@
         gizmo.dragStart.posSnapshots.forEach(function (snap) {
           const s = snap.shape;
           const base = snap.pos;
-          if (axisLabel === 'X') s.pos.x = Math.max(-25, Math.min(25, base.x + u.x * worldDelta));
-          else if (axisLabel === 'Y') s.pos.y = Math.max(0, Math.min(MAX_Y, base.y + u.y * worldDelta));
-          else if (axisLabel === 'Z') s.pos.z = Math.max(-25, Math.min(25, base.z + u.z * worldDelta));
+          let nv;
+          if (axisLabel === 'X') { nv = base.x + u.x * worldDelta; nv = snapMoveValue(nv); s.pos.x = Math.max(-25, Math.min(25, nv)); }
+          else if (axisLabel === 'Y') { nv = base.y + u.y * worldDelta; nv = snapMoveValue(nv); s.pos.y = Math.max(0, Math.min(MAX_Y, nv)); }
+          else if (axisLabel === 'Z') { nv = base.z + u.z * worldDelta; nv = snapMoveValue(nv); s.pos.z = Math.max(-25, Math.min(25, nv)); }
         });
         updateStatus(); showGizmoPopup();
       }
@@ -4160,8 +4609,12 @@
         const dx = nx - dragStartPositions.get(selectedShape).x;
         const dz = nz - dragStartPositions.get(selectedShape).z;
         dragStartPositions.forEach(function (start, s) {
-          s.pos.x = Math.max(-25, Math.min(25, start.x + dx));
-          s.pos.z = Math.max(-25, Math.min(25, start.z + dz));
+          let fx = start.x + dx;
+          let fz = start.z + dz;
+          fx = snapMoveValue(fx);
+          fz = snapMoveValue(fz);
+          s.pos.x = Math.max(-25, Math.min(25, fx));
+          s.pos.z = Math.max(-25, Math.min(25, fz));
         });
         showGizmoPopup();
       }
@@ -4172,7 +4625,9 @@
       const pixelToWorld = camDist / f;
       const dy = (dragStartMouseY - my) * pixelToWorld;
       dragStartPositions.forEach(function (start, s) {
-        s.pos.y = Math.max(0, Math.min(MAX_Y, start.y + dy));
+        let ny = start.y + dy;
+        ny = snapMoveValue(ny);
+        s.pos.y = Math.max(0, Math.min(MAX_Y, ny));
       });
       updateStatus(); showGizmoPopup();
     } else if (mode === 'orbit') {
@@ -4343,9 +4798,9 @@
       const dir = parseFloat(btn.dataset.dir);
       const step = Math.PI / 12 * dir;
       selectedShapes.forEach(function (s) {
-        if (axis === 'x') s.rot.x += step;
-        else if (axis === 'y') s.rot.y += step;
-        else if (axis === 'z') s.rot.z += step;
+        if (axis === 'x') s.rot.x = snapRotation(s.rot.x + step);
+        else if (axis === 'y') s.rot.y = snapRotation(s.rot.y + step);
+        else if (axis === 'z') s.rot.z = snapRotation(s.rot.z + step);
       });
       updateStatus(); showGizmoPopup(); persistCurrentShapes();
     });
@@ -4408,7 +4863,8 @@
     SHAPE_LIST.forEach(function (item) {
       const btn = document.createElement('div');
       btn.className = 'shape-btn';
-      btn.dataset.shape = item.type;
+      btn.setAttribute('data-shape', item.type);
+      try { btn.dataset.shape = item.type; } catch (e) { btn.dataset = { shape: item.type }; }
       btn.title = 'Drag or click to add ' + item.type;
       btn.innerHTML = '<div class="icon">' + item.icon + '</div><div class="lbl">' + item.type + '</div>';
       btn.setAttribute('draggable', 'true');
@@ -4473,6 +4929,556 @@
     requestAnimationFrame(loop);
   }
 
+  
+  // ============================================================
+  // v2: PRECISE MEASUREMENT CALIPERS & NEGATIVE GEOMETRY
+  // ============================================================
+  let negativeMode = false;
+  const negativeToggleBtn = document.getElementById('negativeToggleBtn');
+  const negativeBadge = document.getElementById('negativeBadge');
+  const dimensionPanel = document.getElementById('dimensionPanel');
+  const dimPanelToggleBtn = document.getElementById('dimPanelToggleBtn');
+  const dimClose = document.getElementById('dimClose');
+  const dimX = document.getElementById('dimX');
+  const dimY = document.getElementById('dimY');
+  const dimZ = document.getElementById('dimZ');
+
+  if (negativeToggleBtn) {
+    negativeToggleBtn.addEventListener('click', function () {
+      negativeMode = !negativeMode;
+      negativeToggleBtn.classList.toggle('active', negativeMode);
+      negativeToggleBtn.textContent = negativeMode ? '⬤ Negative ON' : '⬤ Negative';
+      if (negativeBadge) negativeBadge.style.display = negativeMode ? 'block' : 'none';
+      if (selectedShapes && selectedShapes.size > 0) {
+        selectedShapes.forEach(function (s) { s.negative = negativeMode; });
+        persistCurrentShapes();
+        showToast(negativeMode ? 'Selected shapes set to Negative (Holes)' : 'Selected shapes set to Solid');
+      } else {
+        showToast(negativeMode ? 'Negative mode ON — new shapes will be holes' : 'Negative mode OFF');
+      }
+    });
+  }
+
+  if (dimPanelToggleBtn) {
+    dimPanelToggleBtn.addEventListener('click', function () {
+      if (!dimensionPanel) return;
+      const isVis = dimensionPanel.classList.toggle('visible');
+      dimPanelToggleBtn.classList.toggle('active', isVis);
+      if (isVis) refreshDimensionInputs();
+    });
+  }
+
+  if (dimClose) {
+    dimClose.addEventListener('click', function () {
+      if (dimensionPanel) dimensionPanel.classList.remove('visible');
+      if (dimPanelToggleBtn) dimPanelToggleBtn.classList.remove('active');
+    });
+  }
+
+  function getBaseDimensions(shape) {
+    const nat = getNaturalBounds(shape);
+    const hx = nat.x * (shape.scale || 1) / 2;
+    const hy = nat.y * (shape.scale || 1) / 2;
+    const hz = nat.z * (shape.scale || 1) / 2;
+    const corners = [
+      [-hx, -hy, -hz], [hx, -hy, -hz], [hx, hy, -hz], [-hx, hy, -hz],
+      [-hx, -hy, hz], [hx, -hy, hz], [hx, hy, hz], [-hx, hy, hz]
+    ];
+    let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    corners.forEach(function (c) {
+      const r = rotateVec(v3(c[0], c[1], c[2]), shape.rot);
+      if (r.x < minX) minX = r.x; if (r.x > maxX) maxX = r.x;
+      if (r.y < minY) minY = r.y; if (r.y > maxY) maxY = r.y;
+      if (r.z < minZ) minZ = r.z; if (r.z > maxZ) maxZ = r.z;
+    });
+    return { x: Math.max(0.001, maxX - minX), y: Math.max(0.001, maxY - minY), z: Math.max(0.001, maxZ - minZ) };
+  }
+
+  function getNaturalBounds(shape) {
+    const verts = shape.geo.vertices;
+    if (!verts || verts.length === 0) return { x: 1, y: 1, z: 1 };
+    let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    verts.forEach(function (v) {
+      if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+      if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+      if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
+    });
+    return { x: Math.max(0.001, maxX - minX), y: Math.max(0.001, maxY - minY), z: Math.max(0.001, maxZ - minZ) };
+  }
+
+  function refreshDimensionInputs() {
+    if (!selectedShape) return;
+    const verts = getWorldVertices(selectedShape);
+    if (!verts || verts.length === 0) return;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    verts.forEach(function (v) {
+      if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+      if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+      if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
+    });
+    if (dimX) dimX.value = (maxX - minX).toFixed(2);
+    if (dimY) dimY.value = (maxY - minY).toFixed(2);
+    if (dimZ) dimZ.value = (maxZ - minZ).toFixed(2);
+  }
+
+  function applyDimension(axis, newVal) {
+    if (!selectedShape || !isFinite(newVal) || newVal <= 0.001) return;
+    const shape = selectedShape;
+    const base = getBaseDimensions(shape);
+    const st = ensureStretch(shape);
+    let factor = newVal / base[axis];
+    if (!isFinite(factor) || factor <= 0) return;
+    st[axis] = factor;
+    refreshDimensionInputs();
+    updateStatus();
+    persistCurrentShapes();
+  }
+
+  if (dimX) dimX.addEventListener('change', function (e) { applyDimension('x', parseFloat(e.target.value)); });
+  if (dimY) dimY.addEventListener('change', function (e) { applyDimension('y', parseFloat(e.target.value)); });
+  if (dimZ) dimZ.addEventListener('change', function (e) { applyDimension('z', parseFloat(e.target.value)); });
+
+  function drawMeasurementGuides(shape, view) {
+    if (!shape || !shape.geo || !shape.geo.vertices || shape.geo.vertices.length === 0) return;
+    const verts = getWorldVertices(shape);
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    verts.forEach(function (v) {
+      if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+      if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
+      if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
+    });
+
+    const drawBracket = function (a, b, color, label) {
+      const pa = project(a, view), pb = project(b, view);
+      if (!pa || !pb) return;
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke(); ctx.setLineDash([]);
+      const dx = pb.x - pa.x, dy = pb.y - pa.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, tick = 6;
+      ctx.beginPath();
+      ctx.moveTo(pa.x - nx * tick, pa.y - ny * tick); ctx.lineTo(pa.x + nx * tick, pa.y + ny * tick);
+      ctx.moveTo(pb.x - nx * tick, pb.y - ny * tick); ctx.lineTo(pb.x + nx * tick, pb.y + ny * tick);
+      ctx.stroke();
+      const midX = (pa.x + pb.x) / 2, midY = (pa.y + pb.y) / 2;
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const metrics = ctx.measureText(label), boxW = metrics.width + 10, boxH = 20;
+      ctx.fillStyle = 'rgba(20, 20, 35, .92)'; ctx.fillRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH);
+      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH);
+      ctx.fillStyle = color; ctx.fillText(label, midX, midY);
+    };
+
+    drawBracket(v3(minX, minY, maxZ), v3(maxX, minY, maxZ), '#ff6b6b', 'X ' + (maxX - minX).toFixed(2));
+    drawBracket(v3(minX, minY, maxZ), v3(minX, maxY, maxZ), '#6bff8b', 'Y ' + (maxY - minY).toFixed(2));
+    drawBracket(v3(minX, minY, minZ), v3(minX, minY, maxZ), '#6b9bff', 'Z ' + (maxZ - minZ).toFixed(2));
+  }
+
+  // ============================================================
+  // v3: PRECISION SNAPPING SYSTEM
+  // ============================================================
+  const snap = {
+    move: { enabled: true, step: 0.5 },
+    rotate: { enabled: true, step: 15 },
+    scale: { enabled: true, step: 0.1 }
+  };
+  const snapHeader = document.getElementById('snapHeader');
+  const snapBody = document.getElementById('snapBody');
+  const snapChevron = document.getElementById('snapChevron');
+  const snapPanel = document.getElementById('snapPanel');
+  const snapToggleBtn = document.getElementById('snapToggleBtn');
+  const snapMoveToggle = document.getElementById('snapMoveToggle');
+  const snapMoveInput = document.getElementById('snapMoveInput');
+  const snapRotToggle = document.getElementById('snapRotToggle');
+  const snapRotInput = document.getElementById('snapRotInput');
+  const snapScaleToggle = document.getElementById('snapScaleToggle');
+  const snapScaleInput = document.getElementById('snapScaleInput');
+
+  function toggleSnapPanel() {
+    if (!snapPanel) return;
+    const isCol = snapPanel.classList.toggle('collapsed');
+    if (snapChevron) snapChevron.textContent = isCol ? '▸' : '▾';
+    if (snapToggleBtn) snapToggleBtn.classList.toggle('active', !isCol);
+  }
+
+  if (snapToggleBtn) snapToggleBtn.addEventListener('click', toggleSnapPanel);
+  if (snapHeader) snapHeader.addEventListener('click', toggleSnapPanel);
+
+  if (snapMoveToggle) snapMoveToggle.addEventListener('change', function (e) { snap.move.enabled = e.target.checked; });
+  if (snapMoveInput) snapMoveInput.addEventListener('change', function (e) { snap.move.step = parseFloat(e.target.value) || 0.5; });
+  if (snapRotToggle) snapRotToggle.addEventListener('change', function (e) { snap.rotate.enabled = e.target.checked; });
+  if (snapRotInput) snapRotInput.addEventListener('change', function (e) { snap.rotate.step = parseFloat(e.target.value) || 15; });
+  if (snapScaleToggle) snapScaleToggle.addEventListener('change', function (e) { snap.scale.enabled = e.target.checked; });
+  if (snapScaleInput) snapScaleInput.addEventListener('change', function (e) { snap.scale.step = parseFloat(e.target.value) || 0.1; });
+
+  function snapMoveValue(value) {
+    if (!snap.move.enabled) return value;
+    return Math.round(value / snap.move.step) * snap.move.step;
+  }
+  function snapRotation(value) {
+    if (!snap.rotate.enabled) return value;
+    const stepRad = snap.rotate.step * Math.PI / 180;
+    return Math.round(value / stepRad) * stepRad;
+  }
+  function snapScaleValue(value) {
+    if (!snap.scale.enabled) return value;
+    return Math.max(0.15, Math.round(value / snap.scale.step) * snap.scale.step);
+  }
+
+  // ============================================================
+  // v4: SHAPE CATALOG MODAL & CUSTOM BUILDS LIBRARY (FUSED SAFE)
+  // ============================================================
+  const shapeModal = document.getElementById('shapeModal');
+  const shapeModalOverlay = document.getElementById('shapeModalOverlay');
+  const shapeModalBtn = document.getElementById('shapeModalBtn');
+  const shapeModalClose = document.getElementById('shapeModalClose');
+  const shapeModalGrid = document.getElementById('shapeModalGrid');
+  const shapeSearch = document.getElementById('shapeSearch');
+  const saveBuildBtn = document.getElementById('saveBuildBtn');
+  let customBuilds = [];
+  try {
+    const rawBuilds = localStorage.getItem('bananacad_builds');
+    if (rawBuilds) customBuilds = JSON.parse(rawBuilds);
+  } catch (e) {}
+
+  function saveCustomBuilds() {
+    try { localStorage.setItem('bananacad_builds', JSON.stringify(customBuilds)); } catch (e) {}
+  }
+
+  function saveBuildFromShape(shape) {
+    if (!shape) return;
+    const name = 'Build ' + (customBuilds.length + 1);
+    const newBuild = {
+      id: 'build_' + Date.now(),
+      name: name,
+      color: shape.color,
+      isFused: true,
+      shapes: [{
+        type: shape.type,
+        isFused: true,
+        geo: {
+          vertices: shape.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
+          edges: shape.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+          faces: shape.geo.faces.map(function (f) { return f.slice(); })
+        },
+        relPos: { x: 0, y: 0, z: 0 },
+        rot: { x: shape.rot.x, y: shape.rot.y, z: shape.rot.z },
+        scale: shape.scale || 1,
+        stretch: shape.stretch ? { x: shape.stretch.x, y: shape.stretch.y, z: shape.stretch.z } : { x: 1, y: 1, z: 1 },
+        color: shape.color,
+        negative: !!shape.negative,
+        gearTeeth: shape.gearTeeth || 0
+      }]
+    };
+    customBuilds.push(newBuild);
+    saveCustomBuilds();
+    showToast('Auto-saved fused model to Builds library: "' + name + '"');
+  }
+
+  function saveBuildFromSelection() {
+    if (!selectedShapes || selectedShapes.size === 0) {
+      showToast('Select shape(s) first to save as build', true);
+      return;
+    }
+    const list = Array.from(selectedShapes);
+    const center = getMultiCenter(list);
+    const name = 'Build ' + (customBuilds.length + 1);
+
+    const savedShapes = list.map(function (s) {
+      return {
+        type: s.type,
+        isFused: !!s.isFused,
+        geo: {
+          vertices: s.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
+          edges: s.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+          faces: s.geo.faces.map(function (f) { return f.slice(); })
+        },
+        relPos: { x: s.pos.x - center.x, y: s.pos.y - center.y, z: s.pos.z - center.z },
+        rot: { x: s.rot.x, y: s.rot.y, z: s.rot.z },
+        scale: s.scale || 1,
+        stretch: s.stretch ? { x: s.stretch.x, y: s.stretch.y, z: s.stretch.z } : { x: 1, y: 1, z: 1 },
+        color: s.color,
+        negative: !!s.negative,
+        gearTeeth: s.gearTeeth || 0
+      };
+    });
+
+    const newBuild = {
+      id: 'build_' + Date.now(),
+      name: name,
+      shapes: savedShapes,
+      color: list[0].color,
+      isFused: list.length === 1 && list[0].isFused
+    };
+    customBuilds.push(newBuild);
+    saveCustomBuilds();
+    showToast('Saved "' + name + '" (' + savedShapes.length + ' parts) to Builds library!');
+  }
+
+  if (saveBuildBtn) {
+    saveBuildBtn.addEventListener('click', saveBuildFromSelection);
+  }
+
+  if (shapeModalBtn) {
+    shapeModalBtn.addEventListener('click', function () {
+      if (shapeModal) shapeModal.classList.add('open');
+      if (shapeModalOverlay) shapeModalOverlay.classList.add('open');
+      renderCatalogGrid('all');
+    });
+  }
+
+  if (shapeModalClose) {
+    shapeModalClose.addEventListener('click', function () {
+      if (shapeModal) shapeModal.classList.remove('open');
+      if (shapeModalOverlay) shapeModalOverlay.classList.remove('open');
+    });
+  }
+
+  if (shapeModalOverlay) {
+    shapeModalOverlay.addEventListener('click', function () {
+      if (shapeModal) shapeModal.classList.remove('open');
+      if (shapeModalOverlay) shapeModalOverlay.classList.remove('open');
+    });
+  }
+
+  document.querySelectorAll('.shape-modal-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.shape-modal-tab').forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      renderCatalogGrid(tab.dataset.tab);
+    });
+  });
+
+  if (shapeSearch) {
+    shapeSearch.addEventListener('input', function (e) {
+      renderCatalogGrid('all', e.target.value.toLowerCase());
+    });
+  }
+
+  const CATALOG_ITEMS = [
+    { type: 'box', name: 'Cube', icon: '📦', cat: 'basic' },
+    { type: 'sphere', name: 'Sphere', icon: '⚽', cat: 'basic' },
+    { type: 'cylinder', name: 'Cylinder', icon: '🛢️', cat: 'basic' },
+    { type: 'cone', name: 'Cone', icon: '🔺', cat: 'basic' },
+    { type: 'torus', name: 'Torus', icon: '🍩', cat: 'basic' },
+    { type: 'pyramid', name: 'Pyramid', icon: '📐', cat: 'basic' },
+    { type: 'prism', name: 'Prism', icon: '💎', cat: 'basic' },
+    { type: 'gear', name: 'Gear', icon: '⚙️', cat: 'mechanical' },
+    { type: 'star', name: 'Star Flange', icon: '⭐', cat: 'mechanical' },
+    { type: 'capsule', name: 'Capsule', icon: '💊', cat: 'organic' },
+    { type: 'torusKnot', name: 'Torus Knot', icon: '🪢', cat: 'organic' },
+    { type: 'humanoid', name: 'Humanoid', icon: '🚶', cat: 'organic' }
+  ];
+
+  function renderCatalogGrid(cat, query = '') {
+    if (!shapeModalGrid) return;
+    shapeModalGrid.innerHTML = '';
+
+    if (cat === 'builds') {
+      if (customBuilds.length === 0) {
+        shapeModalGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8a8ab8;padding:30px;">No saved builds yet. Select shapes and click "💾 Save Build", or fuse shapes together.</div>';
+        return;
+      }
+      customBuilds.forEach(function (b, idx) {
+        const item = document.createElement('div');
+        item.className = 'shape-modal-item build';
+        item.innerHTML = '<span class="icon">🏗️</span><span class="lbl">' + b.name + '</span><button class="del-build">✕</button>';
+        item.addEventListener('click', function () {
+          const targetX = (Math.random() - 0.5) * 4;
+          const targetZ = (Math.random() - 0.5) * 4;
+          const newSpawned = [];
+
+          if (b.shapes && Array.isArray(b.shapes)) {
+            b.shapes.forEach(function (data) {
+              let geo;
+              if (data.geo && data.geo.vertices && data.geo.vertices.length > 0) {
+                geo = {
+                  vertices: data.geo.vertices.map(function (v) { return v3(v.x, v.y, v.z); }),
+                  edges: data.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+                  faces: data.geo.faces.map(function (f) { return f.slice(); })
+                };
+              } else {
+                geo = GEO_FACTORY[data.type] ? GEO_FACTORY[data.type]() : boxGeo();
+              }
+              const s = {
+                type: data.type,
+                geo: geo,
+                pos: v3(targetX + (data.relPos ? data.relPos.x : 0), (data.relPos ? data.relPos.y : 0), targetZ + (data.relPos ? data.relPos.z : 0)),
+                rot: data.rot ? v3(data.rot.x, data.rot.y, data.rot.z) : v3(0, 0, 0),
+                scale: data.scale || 1,
+                stretch: data.stretch ? v3(data.stretch.x, data.stretch.y, data.stretch.z) : v3(1, 1, 1),
+                color: data.color || b.color || activeColor,
+                negative: !!data.negative,
+                isFused: !!data.isFused,
+                gearTeeth: data.gearTeeth || 0,
+                group: null
+              };
+              shapes.push(s);
+              newSpawned.push(s);
+            });
+          }
+          setSelection(newSpawned);
+          persistCurrentShapes();
+          if (shapeModal) shapeModal.classList.remove('open');
+          if (shapeModalOverlay) shapeModalOverlay.classList.remove('open');
+          showToast('Spawned build: ' + b.name);
+        });
+        item.querySelector('.del-build').addEventListener('click', function (e) {
+          e.stopPropagation();
+          customBuilds.splice(idx, 1);
+          saveCustomBuilds();
+          renderCatalogGrid('builds');
+        });
+        shapeModalGrid.appendChild(item);
+      });
+      return;
+    }
+
+    CATALOG_ITEMS.filter(function (it) {
+      const matchCat = cat === 'all' || it.cat === cat;
+      const matchQ = !query || it.name.toLowerCase().includes(query) || it.type.includes(query);
+      return matchCat && matchQ;
+    }).forEach(function (it) {
+      const el = document.createElement('div');
+      el.className = 'shape-modal-item';
+      el.innerHTML = '<span class="icon">' + it.icon + '</span><span class="lbl">' + it.name + '</span>';
+      el.addEventListener('click', function () {
+        const s = makeShape(it.type, 0, 0);
+        if (s) {
+          shapes.push(s);
+          setSelection([s]);
+          persistCurrentShapes();
+          if (shapeModal) shapeModal.classList.remove('open');
+          if (shapeModalOverlay) shapeModalOverlay.classList.remove('open');
+          showToast('Added ' + it.name);
+        }
+      });
+      shapeModalGrid.appendChild(el);
+    });
+  }
+
+  // ============================================================
+  // d6: SMART SKETCH 2D DRAWING & 3D EXTRUSION ENGINE
+  // ============================================================
+  const sketchBtn = document.getElementById('sketchBtn');
+  const sketchPanel = document.getElementById('sketchPanel');
+  const sketchBadge = document.getElementById('sketchBadge');
+  const sketchOverlayCanvas = document.getElementById('sketchOverlayCanvas');
+  const sketchClear = document.getElementById('sketchClear');
+  const sketchFinish = document.getElementById('sketchFinish');
+  const sketchClose = document.getElementById('sketchClose');
+  const sketchHeight = document.getElementById('sketchHeight');
+  const sketchHeightVal = document.getElementById('sketchHeightVal');
+  const recogLabel = document.getElementById('recogLabel');
+
+  let sketchPoints = [];
+  let isSketching = false;
+  let sketchCtx = null;
+
+  if (sketchOverlayCanvas) {
+    sketchCtx = sketchOverlayCanvas.getContext('2d');
+  }
+
+  function resizeSketchCanvas() {
+    if (!sketchOverlayCanvas || !canvas) return;
+    sketchOverlayCanvas.width = canvas.width;
+    sketchOverlayCanvas.height = canvas.height;
+  }
+  window.addEventListener('resize', resizeSketchCanvas);
+
+  if (sketchBtn) {
+    sketchBtn.addEventListener('click', function () {
+      const active = sketchOverlayCanvas.classList.toggle('active');
+      sketchPanel.classList.toggle('visible', active);
+      sketchBadge.style.display = active ? 'block' : 'none';
+      if (active) {
+        resizeSketchCanvas();
+        sketchPoints = [];
+        showToast('Smart Sketch active: draw a profile on the canvas');
+      }
+    });
+  }
+
+  if (sketchClose) {
+    sketchClose.addEventListener('click', function () {
+      sketchOverlayCanvas.classList.remove('active');
+      sketchPanel.classList.remove('visible');
+      sketchBadge.style.display = 'none';
+    });
+  }
+
+  if (sketchHeight) {
+    sketchHeight.addEventListener('input', function () {
+      if (sketchHeightVal) sketchHeightVal.textContent = parseFloat(sketchHeight.value).toFixed(1);
+    });
+  }
+
+  if (sketchOverlayCanvas) {
+    sketchOverlayCanvas.addEventListener('mousedown', function (e) {
+      isSketching = true;
+      sketchPoints = [{ x: e.offsetX, y: e.offsetY }];
+      redrawSketchOverlay();
+    });
+    sketchOverlayCanvas.addEventListener('mousemove', function (e) {
+      if (!isSketching) return;
+      sketchPoints.push({ x: e.offsetX, y: e.offsetY });
+      redrawSketchOverlay();
+    });
+    window.addEventListener('mouseup', function () {
+      if (!isSketching) return;
+      isSketching = false;
+      if (sketchPoints.length > 5 && recogLabel) {
+        const start = sketchPoints[0], end = sketchPoints[sketchPoints.length - 1];
+        const isClosed = Math.hypot(start.x - end.x, start.y - end.y) < 35;
+        recogLabel.textContent = isClosed ? 'Closed Profile (Extrudable)' : 'Open Curve';
+      }
+    });
+  }
+
+  function redrawSketchOverlay() {
+    if (!sketchCtx || !sketchOverlayCanvas) return;
+    sketchCtx.clearRect(0, 0, sketchOverlayCanvas.width, sketchOverlayCanvas.height);
+    if (sketchPoints.length < 2) return;
+    sketchCtx.strokeStyle = '#50c878';
+    sketchCtx.lineWidth = 3;
+    sketchCtx.beginPath();
+    sketchCtx.moveTo(sketchPoints[0].x, sketchPoints[0].y);
+    for (let i = 1; i < sketchPoints.length; i++) {
+      sketchCtx.lineTo(sketchPoints[i].x, sketchPoints[i].y);
+    }
+    sketchCtx.stroke();
+  }
+
+  if (sketchClear) {
+    sketchClear.addEventListener('click', function () {
+      sketchPoints = [];
+      if (sketchCtx && sketchOverlayCanvas) {
+        sketchCtx.clearRect(0, 0, sketchOverlayCanvas.width, sketchOverlayCanvas.height);
+      }
+      if (recogLabel) recogLabel.textContent = 'Draw profile...';
+    });
+  }
+
+  if (sketchFinish) {
+    sketchFinish.addEventListener('click', function () {
+      if (sketchPoints.length < 5) {
+        showToast('Draw a larger profile first', true);
+        return;
+      }
+      const h = parseFloat(sketchHeight ? sketchHeight.value : '1') || 1.0;
+      const s = makeShape('prism', 0, 0);
+      if (s) {
+        s.scale = h;
+        shapes.push(s);
+        setSelection([s]);
+        persistCurrentShapes();
+        sketchOverlayCanvas.classList.remove('active');
+        sketchPanel.classList.remove('visible');
+        sketchBadge.style.display = 'none';
+        showToast('Extruded 3D prism from sketch!');
+      }
+    });
+  }
+
   function init() {
     resizeCanvas();
     api.load();
@@ -4495,5 +5501,24 @@
   init();
 })();
 </script>
+
+  <!-- v4: Shape Library Modal -->
+  <div class="modal-overlay-bg" id="shapeModalOverlay"></div>
+  <div class="shape-modal" id="shapeModal">
+    <div class="shape-modal-header">
+      <h2>📦 Banana CAD Catalog & Builds</h2>
+      <button class="shape-modal-close" id="shapeModalClose">✕</button>
+    </div>
+    <div class="shape-modal-tabs">
+      <button class="shape-modal-tab active" data-tab="all">All Shapes</button>
+      <button class="shape-modal-tab" data-tab="basic">Basic</button>
+      <button class="shape-modal-tab" data-tab="mechanical">Mechanical</button>
+      <button class="shape-modal-tab" data-tab="organic">Organic</button>
+      <button class="shape-modal-tab" data-tab="builds">🏗️ Custom Builds</button>
+    </div>
+    <input type="search" class="shape-search" id="shapeSearch" placeholder="🔍 Search shapes (box, gear, plate, humanoid, etc)...">
+    <div class="shape-modal-grid" id="shapeModalGrid"></div>
+  </div>
+
 </body>
 </html>
