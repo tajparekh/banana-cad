@@ -407,11 +407,28 @@
   }
   .top-bar input[type=range] { width: 110px; accent-color: #f7c44f; cursor: pointer; }
   .top-bar input[type=range]:disabled { opacity: 0.4; cursor: not-allowed; }
-  .scale-value {
+  .scale-value, input.scale-value {
     color: #f7d44f; font-weight: 700; font-size: 0.85rem;
-    min-width: 46px; text-align: center;
-    background: #2b2b48; padding: 3px 8px;
+    width: 60px; min-width: 46px; text-align: center;
+    background: #2b2b48; padding: 3px 6px;
     border-radius: 6px; border: 1px solid #4a4a72;
+    outline: none; font-family: inherit;
+    box-sizing: border-box;
+    -moz-appearance: textfield;
+  }
+  input.scale-value:focus {
+    border-color: #f7c44f;
+    box-shadow: 0 0 6px rgba(247, 196, 79, 0.4);
+    background: #1e1e36;
+  }
+  input.scale-value::-webkit-inner-spin-button,
+  input.scale-value::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input.scale-value:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
   .view-btn {
     background: #2b2b48; border: 1px solid #56568a;
@@ -909,6 +926,23 @@
     letter-spacing: 0.3px; word-break: break-word;
     line-height: 1.2;
   }
+  .lib-item { position: relative; }
+  .lib-item .lib-sub {
+    font-size: 0.5rem; color: #f7c44f; font-weight: 600;
+  }
+  .lib-item .lib-actions {
+    position: absolute; top: 3px; right: 3px;
+    display: none; gap: 2px;
+  }
+  .lib-item:hover .lib-actions { display: flex; }
+  .lib-item .lib-btn {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: none; font-size: 0.6rem; cursor: pointer;
+    background: rgba(40,40,70,0.85); color: #d0d0f0;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .lib-item .lib-btn:hover { background: #7a5aff; color: #fff; }
+  .lib-item .lib-btn.del:hover { background: #ff5555; color: #fff; }
   .lib-item.dragging { opacity: 0.4; }
   .lib-hint {
     font-size: 0.68rem; color: #8a8ab8;
@@ -1029,58 +1063,14 @@
     z-index: 10;
   }
 
-  /* v3: Snap Panel (Magnetic alignment) */
-  .snap-panel {
-    position: absolute;
-    top: 60px;
-    right: 14px;
-    width: 185px;
-    background: rgba(26, 26, 46, .95);
-    border: 1px solid rgba(255, 255, 255, .15);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .snap-panel.collapsed { transform: translateX(calc(100% - 40px)); }
-  .snap-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, .06);
-    cursor: pointer;
-    user-select: none;
-    font-size: .72rem;
-    font-weight: 700;
-    color: #ffd966;
-  }
-  .snap-header .snap-ico { font-size: 14px; }
-  .snap-body {
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .snap-panel.collapsed .snap-body { display: none; }
-  .snap-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: .68rem;
-    color: #a0a0c0;
-  }
-  .snap-row input[type=number] {
-    width: 52px;
-    background: rgba(0, 0, 0, .3);
-    border: 1px solid rgba(255, 255, 255, .15);
-    border-radius: 6px;
-    padding: 2px 6px;
+  /* v3: Precision Snapping Button */
+  #snapToggleBtn.active {
+    background: linear-gradient(135deg, #1e4b7a, #3ba2f5);
+    border-color: transparent;
     color: #fff;
-    font-size: .68rem;
+    box-shadow: 0 3px 10px rgba(59, 162, 245, .4);
   }
+  .snap-panel { display: none !important; }
 
   /* v4: Shape Catalog Modal & Custom Builds */
   .shape-modal {
@@ -1216,6 +1206,19 @@
     justify-content: center;
   }
   .shape-modal-item.build:hover .del-build { display: flex; }
+  .shape-modal-item.build .build-actions {
+    position: absolute; top: 3px; right: 3px;
+    display: none; gap: 2px;
+  }
+  .shape-modal-item.build:hover .build-actions { display: flex; }
+  .shape-modal-item.build .b-btn {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: none; font-size: 0.6rem; cursor: pointer;
+    background: rgba(40,40,70,0.85); color: #d0d0f0;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .shape-modal-item.build .b-btn:hover { background: #7a5aff; color: #fff; }
+  .shape-modal-item.build .b-btn.del:hover { background: #ff5555; color: #fff; }
   .modal-overlay-bg {
     position: fixed;
     inset: 0;
@@ -1383,7 +1386,7 @@
     <!-- Precision Features & Controls -->
     <button class="topbar-action negative-toggle" id="negativeToggleBtn" title="Toggle negative (hole) shape mode">⬤ Negative</button>
     <button class="topbar-action" id="dimPanelToggleBtn" title="Precision Real-Time Calipers">📐 Dimensions</button>
-    <button class="topbar-action" id="snapToggleBtn" title="Precision Magnetic Snapping">🧲 Snap</button>
+    <button class="topbar-action active" id="snapToggleBtn" title="Precision Magnetic Snapping (0.5m / 15°)">🧲 Snap ON</button>
     <button class="topbar-action" id="shapeModalBtn" title="Shapes & Custom Builds Library">📦 Catalog</button>
     <button class="topbar-action" id="saveBuildBtn" title="Save selected shape/assembly to Builds Library">💾 Save Build</button>
     <button class="topbar-action" id="sketchBtn" title="2D Smart Sketch to 3D Extrusion">✏️ Smart Sketch</button>
@@ -1410,7 +1413,7 @@
       <div class="group">
         <label>Scale</label>
         <input type="range" id="scaleSlider" min="0.3" max="4" step="0.05" value="1" disabled>
-        <span class="scale-value" id="scaleValue">1.00</span>
+        <input type="number" class="scale-value" id="scaleValue" min="0.05" max="20" step="0.05" value="1.00" disabled title="Scale value (click to edit number, Backspace to clear/change)">
       </div>
 
       <div class="group">
@@ -1475,19 +1478,7 @@
       
       <!-- d6: Sketch Badge -->
       <div class="sketch-badge" id="sketchBadge">✏️ SMART SKETCH MODE</div>
-      
-      <!-- v3: Snap Panel -->
-      <div class="snap-panel collapsed" id="snapPanel">
-        <div class="snap-header" id="snapHeader">
-          <span><span class="snap-ico">🧲</span> Precision Snap</span>
-          <span id="snapChevron">▸</span>
-        </div>
-        <div class="snap-body" id="snapBody">
-          <div class="snap-row"><label><input type="checkbox" id="snapMoveToggle" checked> Move (m)</label><input type="number" id="snapMoveInput" step="0.1" min="0.01" value="0.5"></div>
-          <div class="snap-row"><label><input type="checkbox" id="snapRotToggle" checked> Rot (°)</label><input type="number" id="snapRotInput" step="5" min="1" value="15"></div>
-          <div class="snap-row"><label><input type="checkbox" id="snapScaleToggle" checked> Scale</label><input type="number" id="snapScaleInput" step="0.05" min="0.01" value="0.1"></div>
-        </div>
-      </div>
+
       
       <!-- d6: Smart Sketch Panel -->
       <div class="sketch-panel" id="sketchPanel">
@@ -1625,9 +1616,21 @@
 </div>
 
 <div class="modal-overlay" id="importModal">
-  <div class="modal-box">
-    <h2>Import from Another Project</h2>
-    <div class="modal-sub">Bring shapes from one of your other projects into this one.</div>
+  <div class="modal-box" style="max-width: 520px;">
+    <h2>📥 Import Shapes & Personal Builds</h2>
+    <div class="modal-sub">Import personal build files from your computer or bring shapes from your other projects.</div>
+
+    <div class="import-file-box" style="background:#202038; border:1px dashed #56568a; border-radius:12px; padding:14px; margin:14px 0; text-align:center;">
+      <div style="font-size:1.4rem; margin-bottom:4px;">📁</div>
+      <div style="font-weight:700; color:#c0e8ff; font-size:0.85rem; margin-bottom:4px;">Import Personal Build File (.json)</div>
+      <div style="font-size:0.72rem; color:#9090b8; margin-bottom:10px;">Select a saved build JSON file to store in your Library or place on canvas</div>
+      <div style="display:flex; justify-content:center; gap:8px;">
+        <button class="topbar-action" id="importFileToLibBtn" style="background:#7a5aff; color:#fff; font-weight:700; padding:6px 14px; font-size:0.75rem;">💾 Save to Library</button>
+        <button class="topbar-action" id="importFileToCanvasBtn" style="background:#2b2b48; border:1px solid #56568a; color:#e0e0ff; padding:6px 14px; font-size:0.75rem;">＋ Add to Canvas</button>
+      </div>
+    </div>
+
+    <h3 style="font-size:0.8rem; color:#a0a0d0; text-transform:uppercase; margin:14px 0 6px;">From Your Projects</h3>
     <div id="importProjectList"></div>
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelImport">Cancel</button>
@@ -2297,33 +2300,378 @@
   });
 
   // ============================================================
+  // PERSONAL BUILDS & LIBRARY SUBSYSTEM
+  // ============================================================
+  let customBuilds = [];
+  try {
+    const rawBuilds = localStorage.getItem('bananacad_builds');
+    if (rawBuilds) customBuilds = JSON.parse(rawBuilds);
+  } catch (e) {}
+
+  function saveCustomBuilds() {
+    try { localStorage.setItem('bananacad_builds', JSON.stringify(customBuilds)); } catch (e) {}
+  }
+
+  function spawnBuild(b, targetX, targetZ) {
+    if (!b) return [];
+    if (appMode !== 'build') {
+      showToast('Switch to Build mode to add shapes', true);
+      return [];
+    }
+    targetX = (targetX != null && isFinite(targetX)) ? targetX : (Math.random() - 0.5) * 4;
+    targetZ = (targetZ != null && isFinite(targetZ)) ? targetZ : (Math.random() - 0.5) * 4;
+    const newSpawned = [];
+
+    const rawShapes = Array.isArray(b.shapes) ? b.shapes : (b.type ? [b] : []);
+    rawShapes.forEach(function (data) {
+      let geo;
+      if (data.geo && data.geo.vertices && data.geo.vertices.length > 0) {
+        geo = {
+          vertices: data.geo.vertices.map(function (v) { return v3(v.x, v.y, v.z); }),
+          edges: data.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+          faces: data.geo.faces.map(function (f) { return f.slice(); })
+        };
+      } else if (data.type && GEO_FACTORY[data.type]) {
+        geo = GEO_FACTORY[data.type]();
+      } else {
+        geo = boxGeo();
+      }
+
+      const relX = (data.relPos ? data.relPos.x : (data.pos ? data.pos.x : 0)) || 0;
+      const relY = (data.relPos ? data.relPos.y : (data.pos ? data.pos.y : 0)) || 0;
+      const relZ = (data.relPos ? data.relPos.z : (data.pos ? data.pos.z : 0)) || 0;
+
+      const rotX = (data.rot ? data.rot.x : 0) || 0;
+      const rotY = (data.rot ? data.rot.y : 0) || 0;
+      const rotZ = (data.rot ? data.rot.z : 0) || 0;
+
+      const stX = (data.stretch ? data.stretch.x : 1) || 1;
+      const stY = (data.stretch ? data.stretch.y : 1) || 1;
+      const stZ = (data.stretch ? data.stretch.z : 1) || 1;
+
+      let col = data.color || b.color || activeColor;
+      if (typeof col === 'string') {
+        const found = COLORS.find(function (c) { return c.hex === col || c.name === col; });
+        col = found || { name: 'custom', hex: col, stroke: col };
+      }
+
+      const s = {
+        type: data.type || 'box',
+        geo: geo,
+        pos: v3(targetX + relX, relY, targetZ + relZ),
+        rot: v3(rotX, rotY, rotZ),
+        scale: data.scale != null ? data.scale : 1,
+        stretch: v3(stX, stY, stZ),
+        color: { name: col.name || 'custom', hex: col.hex || '#ffffff', stroke: col.stroke || col.hex || '#888888' },
+        negative: !!data.negative,
+        isFused: !!data.isFused,
+        gearTeeth: data.gearTeeth || 0,
+        group: null
+      };
+      shapes.push(s);
+      newSpawned.push(s);
+    });
+
+    if (newSpawned.length > 0) {
+      setSelection(newSpawned);
+      persistCurrentShapes();
+      updateStatus();
+      updateGearBadge();
+      showToast('Spawned build: ' + (b.name || 'Build'));
+    }
+    return newSpawned;
+  }
+
+  function exportBuildToJson(b) {
+    if (!b) return;
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(b, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    const cleanName = (b.name || 'personal_build').replace(/[^a-zA-Z0-9_\-]/g, '_');
+    a.setAttribute('download', cleanName + '.bananabuild.json');
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 200);
+    showToast('Exported build "' + b.name + '" as JSON');
+  }
+
+  function importBuildFromJson(jsonString, destination) {
+    destination = destination || 'library';
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      showToast('Invalid JSON file format', true);
+      return null;
+    }
+
+    let importedList = [];
+    if (Array.isArray(parsed)) {
+      if (parsed.length > 0 && parsed[0].shapes) {
+        parsed.forEach(function (item) {
+          if (item && item.shapes) {
+            item.id = item.id || ('build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4));
+            item.name = item.name || ('Imported Build ' + (customBuilds.length + 1));
+            customBuilds.push(item);
+            importedList.push(item);
+          }
+        });
+      } else if (parsed.length > 0) {
+        const b = {
+          id: 'build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          name: 'Imported Build ' + (customBuilds.length + 1),
+          shapes: parsed,
+          color: (parsed[0] && parsed[0].color) || COLORS[0],
+          isFused: false
+        };
+        customBuilds.push(b);
+        importedList.push(b);
+      }
+    } else if (parsed && typeof parsed === 'object') {
+      if (parsed.shapes && Array.isArray(parsed.shapes)) {
+        const b = {
+          id: parsed.id || ('build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
+          name: parsed.name || ('Imported Build ' + (customBuilds.length + 1)),
+          shapes: parsed.shapes,
+          color: parsed.color || (parsed.shapes[0] && parsed.shapes[0].color) || COLORS[0],
+          isFused: !!parsed.isFused
+        };
+        customBuilds.push(b);
+        importedList.push(b);
+      } else if (parsed.type || parsed.geo) {
+        const b = {
+          id: 'build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          name: parsed.type || 'Imported Shape',
+          shapes: [parsed],
+          color: parsed.color || COLORS[0],
+          isFused: !!parsed.isFused
+        };
+        customBuilds.push(b);
+        importedList.push(b);
+      }
+    }
+
+    if (importedList.length === 0) {
+      showToast('Could not find shapes or build data in file', true);
+      return null;
+    }
+
+    saveCustomBuilds();
+    if (destination === 'canvas') {
+      importedList.forEach(function (b) { spawnBuild(b); });
+      showToast('Imported and added ' + (importedList.length === 1 ? ('"' + importedList[0].name + '"') : (importedList.length + ' builds')) + ' to canvas!');
+    } else {
+      showToast('Imported ' + (importedList.length === 1 ? ('"' + importedList[0].name + '"') : (importedList.length + ' builds')) + ' to Personal Builds Library!');
+    }
+
+    if (typeof renderLibGrid === 'function' && shapesLibOverlay.classList.contains('visible')) renderLibGrid();
+    if (typeof renderCatalogGrid === 'function' && shapeModal && shapeModal.classList.contains('open')) renderCatalogGrid('builds');
+    return importedList[0];
+  }
+
+  function promptImportBuildFile(destination) {
+    destination = destination || 'library';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.style.display = 'none';
+    input.addEventListener('change', function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        importBuildFromJson(ev.target.result, destination);
+      };
+      reader.readAsText(file);
+    });
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(function () { if (input.parentNode) input.parentNode.removeChild(input); }, 2000);
+  }
+
+  function saveBuildFromSelection() {
+    let list = Array.from(selectedShapes);
+    if (list.length === 0) {
+      if (shapes.length > 0) {
+        const confirmAll = confirm('No shapes are currently selected. Would you like to save all ' + shapes.length + ' shapes in this workspace as a personal build in your library?');
+        if (!confirmAll) return;
+        list = shapes.slice();
+      } else {
+        showToast('Create or select shapes first to save as a personal build', true);
+        return;
+      }
+    }
+
+    const defaultName = (list.length === 1 ? list[0].type : 'My Build') + ' ' + (customBuilds.length + 1);
+    const entered = prompt('Enter a name for this personal build in your library:', defaultName);
+    if (entered === null) return;
+    const name = entered.trim() || defaultName;
+
+    const center = getMultiCenter(list);
+    const savedShapes = list.map(function (s) {
+      return {
+        type: s.type,
+        isFused: !!s.isFused,
+        geo: (s.geo && s.geo.vertices) ? {
+          vertices: s.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
+          edges: s.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+          faces: s.geo.faces.map(function (f) { return f.slice(); })
+        } : null,
+        relPos: { x: s.pos.x - center.x, y: s.pos.y - center.y, z: s.pos.z - center.z },
+        rot: { x: s.rot.x, y: s.rot.y, z: s.rot.z },
+        scale: s.scale || 1,
+        stretch: s.stretch ? { x: s.stretch.x, y: s.stretch.y, z: s.stretch.z } : { x: 1, y: 1, z: 1 },
+        color: s.color,
+        negative: !!s.negative,
+        gearTeeth: s.gearTeeth || 0
+      };
+    });
+
+    const newBuild = {
+      id: 'build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: name,
+      shapes: savedShapes,
+      color: list[0].color,
+      isFused: list.length === 1 && !!list[0].isFused
+    };
+    customBuilds.push(newBuild);
+    saveCustomBuilds();
+    showToast('Saved "' + name + '" (' + savedShapes.length + ' parts) to Personal Builds Library!');
+    if (typeof renderLibGrid === 'function' && shapesLibOverlay.classList.contains('visible')) renderLibGrid();
+    if (typeof renderCatalogGrid === 'function' && shapeModal && shapeModal.classList.contains('open')) renderCatalogGrid('builds');
+    return newBuild;
+  }
+
+  function saveBuildFromShape(shape) {
+    if (!shape) return;
+    const name = 'Fused ' + (shape.type || 'Mesh') + ' ' + (customBuilds.length + 1);
+    const newBuild = {
+      id: 'build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: name,
+      color: shape.color,
+      isFused: true,
+      shapes: [{
+        type: shape.type,
+        isFused: true,
+        geo: shape.geo ? {
+          vertices: shape.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
+          edges: shape.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+          faces: shape.geo.faces.map(function (f) { return f.slice(); })
+        } : null,
+        relPos: { x: 0, y: 0, z: 0 },
+        rot: { x: shape.rot.x, y: shape.rot.y, z: shape.rot.z },
+        scale: shape.scale || 1,
+        stretch: shape.stretch ? { x: shape.stretch.x, y: shape.stretch.y, z: shape.stretch.z } : { x: 1, y: 1, z: 1 },
+        color: shape.color,
+        negative: !!shape.negative,
+        gearTeeth: shape.gearTeeth || 0
+      }]
+    };
+    customBuilds.push(newBuild);
+    saveCustomBuilds();
+    showToast('Saved fused build to Library: "' + name + '"');
+  }
+
+  function saveProjectAsBuild(proj) {
+    if (!proj || !proj.shapes || proj.shapes.length === 0) {
+      showToast('Project has no shapes to save as build', true);
+      return null;
+    }
+    const name = proj.name || ('Project Build ' + (customBuilds.length + 1));
+    let sumX = 0, sumY = 0, sumZ = 0, count = 0;
+    proj.shapes.forEach(function (s) {
+      if (s.pos) {
+        sumX += s.pos.x || 0; sumY += s.pos.y || 0; sumZ += s.pos.z || 0;
+        count++;
+      }
+    });
+    const cx = count > 0 ? (sumX / count) : 0;
+    const cy = count > 0 ? (sumY / count) : 0;
+    const cz = count > 0 ? (sumZ / count) : 0;
+
+    const savedShapes = proj.shapes.map(function (s) {
+      return {
+        type: s.type || 'box',
+        isFused: !!s.isFused,
+        geo: s.geo || null,
+        relPos: { x: (s.pos ? s.pos.x : 0) - cx, y: (s.pos ? s.pos.y : 0) - cy, z: (s.pos ? s.pos.z : 0) - cz },
+        rot: s.rot ? { x: s.rot.x, y: s.rot.y, z: s.rot.z } : { x: 0, y: 0, z: 0 },
+        scale: s.scale || 1,
+        stretch: s.stretch ? { x: s.stretch.x, y: s.stretch.y, z: s.stretch.z } : { x: 1, y: 1, z: 1 },
+        color: s.color || COLORS[0],
+        negative: !!s.negative,
+        gearTeeth: s.gearTeeth || 0
+      };
+    });
+
+    const newBuild = {
+      id: 'build_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: name,
+      shapes: savedShapes,
+      color: (proj.shapes[0] && proj.shapes[0].color) || COLORS[0],
+      isFused: false
+    };
+    customBuilds.push(newBuild);
+    saveCustomBuilds();
+    showToast('Saved project "' + name + '" (' + savedShapes.length + ' parts) to Personal Builds Library!');
+    if (typeof renderLibGrid === 'function' && shapesLibOverlay.classList.contains('visible')) renderLibGrid();
+    if (typeof renderCatalogGrid === 'function' && shapeModal && shapeModal.classList.contains('open')) renderCatalogGrid('builds');
+    return newBuild;
+  }
+
+  // ============================================================
   // IMPORT MODAL
   // ============================================================
   const importModal = document.getElementById('importModal');
   const importProjectList = document.getElementById('importProjectList');
   const cancelImport = document.getElementById('cancelImport');
   const importBtn = document.getElementById('importBtn');
+  const importFileToLibBtn = document.getElementById('importFileToLibBtn');
+  const importFileToCanvasBtn = document.getElementById('importFileToCanvasBtn');
+
+  if (importFileToLibBtn) {
+    importFileToLibBtn.addEventListener('click', function () {
+      promptImportBuildFile('library');
+      importModal.classList.remove('visible');
+    });
+  }
+  if (importFileToCanvasBtn) {
+    importFileToCanvasBtn.addEventListener('click', function () {
+      promptImportBuildFile('canvas');
+      importModal.classList.remove('visible');
+    });
+  }
 
   importBtn.addEventListener('click', function () {
-    if (!currentUser) { showToast('Sign in to import', true); return; }
     const myProjects = getMyProjects().filter(function (p) { return p.id !== currentProjectId; });
     importProjectList.innerHTML = '';
     if (myProjects.length === 0) {
-      importProjectList.innerHTML = '<div class="share-empty">You have no other projects to import from.<br>Create another project first, then come back.</div>';
+      importProjectList.innerHTML = '<div class="share-empty">No other projects found.<br>Use the button above to import personal build files (.json).</div>';
     } else {
       myProjects.forEach(function (p) {
         const row = document.createElement('div');
         row.className = 'import-project-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '10px';
         const sc = (p.shapes || []).length;
         row.innerHTML =
           '<div class="ipr-icon">' + shapeIconForType((p.shapes[0] || {}).type || 'box') + '</div>' +
-          '<div class="ipr-info">' +
-            '<div class="ipr-name"></div>' +
-            '<div class="ipr-meta">' + sc + ' shape' + (sc === 1 ? '' : 's') + ' · ' + formatRelativeTime(p.updatedAt || p.createdAt) + '</div>' +
+          '<div class="ipr-info" style="flex:1;">' +
+            '<div class="ipr-name" style="font-weight:700; color:#e0e0ff;"></div>' +
+            '<div class="ipr-meta" style="font-size:0.7rem; color:#8a8ab8;">' + sc + ' shape' + (sc === 1 ? '' : 's') + ' · ' + formatRelativeTime(p.updatedAt || p.createdAt) + '</div>' +
           '</div>' +
-          '<div class="ipr-arrow">＋</div>';
+          '<div class="ipr-actions" style="display:flex; gap:6px;">' +
+            '<button class="topbar-action ipr-to-canvas" style="font-size:0.68rem; padding:4px 8px;" title="Import shapes to current workspace">＋ Canvas</button>' +
+            '<button class="topbar-action ipr-to-lib" style="font-size:0.68rem; padding:4px 8px; background:#7a5aff; color:#fff;" title="Save project as Personal Build in Library">💾 To Library</button>' +
+          '</div>';
         row.querySelector('.ipr-name').textContent = p.name;
-        row.addEventListener('click', function () { importFromProject(p.id); });
+        row.querySelector('.ipr-to-canvas').addEventListener('click', function () {
+          importFromProject(p.id);
+        });
+        row.querySelector('.ipr-to-lib').addEventListener('click', function () {
+          saveProjectAsBuild(p);
+        });
         importProjectList.appendChild(row);
       });
     }
@@ -2713,7 +3061,7 @@
     }
     const topPoleIdx = v.length; v.push(v3(0, r + cylH + r, 0));
     for (let i = 0; i < su; i++) e.push([bottomPoleIdx, bottomRingStart + i]);
-    for (let j = 0; j < sv - 2; j++) {
+    for (let j = 0; j < sv - 1; j++) {
       const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
       for (let i = 0; i < su; i++) e.push([a+i, b+i]);
     }
@@ -2733,7 +3081,7 @@
       for (let j = 0; j < sv - 1; j++) e.push([topHemiStart + j*su + i, topHemiStart + j*su + ni]);
     }
     for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([bottomPoleIdx, bottomRingStart + ni, bottomRingStart + i]); }
-    for (let j = 0; j < sv - 2; j++) {
+    for (let j = 0; j < sv - 1; j++) {
       const a = bottomRingStart + j*su, b = bottomRingStart + (j+1)*su;
       for (let i = 0; i < su; i++) { const ni = (i+1)%su; f.push([a+i, a+ni, b+ni, b+i]); }
     }
@@ -3140,35 +3488,69 @@
     return s;
   }
   function makeShapeFromData(data) {
-    const type = data.type;
-    if (!GEO_FACTORY[type]) return null;
-    const geo = GEO_FACTORY[type]();
-    const col = data.color || COLORS[0];
+    if (!data) return null;
+    const type = data.type || 'box';
+    let geo;
+    if (data.geo && data.geo.vertices && data.geo.vertices.length > 0) {
+      geo = {
+        vertices: data.geo.vertices.map(function (v) { return v3(v.x, v.y, v.z); }),
+        edges: data.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+        faces: data.geo.faces.map(function (f) { return f.slice(); })
+      };
+    } else if (GEO_FACTORY[type]) {
+      geo = GEO_FACTORY[type]();
+    } else {
+      geo = boxGeo();
+    }
+    let col = data.color || COLORS[0];
+    if (typeof col === 'string') {
+      const found = COLORS.find(function (c) { return c.hex === col || c.name === col; });
+      col = found || { name: 'custom', hex: col, stroke: col };
+    }
+    const posX = (data.pos && isFinite(data.pos.x)) ? data.pos.x : 0;
+    const posY = (data.pos && isFinite(data.pos.y)) ? data.pos.y : 0;
+    const posZ = (data.pos && isFinite(data.pos.z)) ? data.pos.z : 0;
+    const rotX = (data.rot && isFinite(data.rot.x)) ? data.rot.x : 0;
+    const rotY = (data.rot && isFinite(data.rot.y)) ? data.rot.y : 0;
+    const rotZ = (data.rot && isFinite(data.rot.z)) ? data.rot.z : 0;
     const s = {
       type: type,
       geo: geo,
-      pos: v3(data.pos.x, data.pos.y, data.pos.z),
-      rot: v3(data.rot.x, data.rot.y, data.rot.z),
+      pos: v3(posX, posY, posZ),
+      rot: v3(rotX, rotY, rotZ),
       scale: data.scale != null ? data.scale : 1,
       stretch: data.stretch ? v3(data.stretch.x, data.stretch.y, data.stretch.z) : v3(1, 1, 1),
-      color: { name: col.name, hex: col.hex, stroke: col.stroke },
-      group: data.group || null
+      color: { name: col.name || 'custom', hex: col.hex || '#ffffff', stroke: col.stroke || col.hex || '#888888' },
+      group: data.group || null,
+      negative: !!data.negative,
+      isFused: !!data.isFused
     };
     if (isHumanoid(type)) s.humanoidHeight = getHumanoidHeight(type);
-    if (isGear(type)) s.gearTeeth = parseInt(type.replace('gear', ''), 10) || 8;
+    if (isGear(type) || data.gearTeeth) s.gearTeeth = data.gearTeeth || parseInt(type.replace('gear', ''), 10) || 8;
     return s;
   }
   function serializeShape(shape) {
     const st = ensureStretch(shape);
-    return {
+    const res = {
       type: shape.type,
       pos: { x: shape.pos.x, y: shape.pos.y, z: shape.pos.z },
       rot: { x: shape.rot.x, y: shape.rot.y, z: shape.rot.z },
       scale: shape.scale,
       stretch: { x: st.x, y: st.y, z: st.z },
       color: { name: shape.color.name, hex: shape.color.hex, stroke: shape.color.stroke },
-      group: shape.group || null
+      group: shape.group || null,
+      negative: !!shape.negative,
+      isFused: !!shape.isFused,
+      gearTeeth: shape.gearTeeth || 0
     };
+    if (shape.isFused && shape.geo && shape.geo.vertices) {
+      res.geo = {
+        vertices: shape.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
+        edges: shape.geo.edges.map(function (e) { return [e[0], e[1]]; }),
+        faces: shape.geo.faces.map(function (f) { return f.slice(); })
+      };
+    }
+    return res;
   }
   function loadShapesIntoApp(dataArray) {
     shapes.length = 0;
@@ -4255,6 +4637,7 @@
 
   const LIB_CATEGORIES = [
     { id: 'all', label: 'All' },
+    { id: 'builds', label: '🏗️ My Builds' },
     { id: 'basic', label: 'Basic', match: (n) => ['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'pyramid', 'prism', 'tetra', 'octa', 'dodeca', 'icosa', 'torusKnot'].indexOf(n) >= 0 },
     { id: 'spheres', label: 'Spheres', match: (n) => n.indexOf('sph') === 0 },
     { id: 'boxes', label: 'Boxes', match: (n) => n.indexOf('box') === 0 },
@@ -4309,6 +4692,98 @@
 
   function renderLibGrid() {
     const q = (libSearch.value || '').trim().toLowerCase();
+
+    if (libActiveCat === 'builds') {
+      const filtered = customBuilds.filter(function (b) {
+        return !q || (b.name && b.name.toLowerCase().includes(q));
+      });
+      libGrid.innerHTML = '';
+
+      const bar = document.createElement('div');
+      bar.style.gridColumn = '1 / -1';
+      bar.style.display = 'flex';
+      bar.style.justifyContent = 'space-between';
+      bar.style.alignItems = 'center';
+      bar.style.background = '#1c1c30';
+      bar.style.border = '1px solid #3c3c5e';
+      bar.style.borderRadius = '10px';
+      bar.style.padding = '8px 12px';
+      bar.style.marginBottom = '6px';
+      bar.innerHTML = '<span style="font-size:0.75rem; color:#c0e8ff; font-weight:700;">🏗️ Personal Builds (' + customBuilds.length + ')</span>' +
+        '<div style="display:flex; gap:8px;">' +
+          '<button id="libImportBtn" class="topbar-action" style="font-size:0.7rem; padding:4px 10px; background:#7a5aff; color:#fff;" title="Import a .json build file">📥 Import .JSON</button>' +
+          '<button id="libSaveBtn" class="topbar-action" style="font-size:0.7rem; padding:4px 10px; background:#2b2b48; border:1px solid #56568a; color:#f7d44f;" title="Save current shapes as a build">💾 Save Current</button>' +
+        '</div>';
+      libGrid.appendChild(bar);
+      bar.querySelector('#libImportBtn').addEventListener('click', function () { promptImportBuildFile('library'); });
+      bar.querySelector('#libSaveBtn').addEventListener('click', saveBuildFromSelection);
+
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'share-empty';
+        empty.style.gridColumn = '1 / -1';
+        empty.style.padding = '30px 10px';
+        empty.innerHTML = 'No personal builds found.<br><br>Select shapes on the canvas and click "💾 Save Current", or click "📥 Import .JSON" to import from a file.';
+        libGrid.appendChild(empty);
+        libCount.textContent = '0 builds';
+        return;
+      }
+      libCount.textContent = filtered.length + ' build' + (filtered.length === 1 ? '' : 's');
+
+      filtered.forEach(function (b) {
+        const item = document.createElement('div');
+        item.className = 'lib-item';
+        item.draggable = true;
+        item.dataset.type = 'build:' + b.id;
+        const partCount = (b.shapes && Array.isArray(b.shapes)) ? b.shapes.length : 1;
+        item.innerHTML = '<div class="lib-ic">🏗️</div>' +
+          '<div class="lib-lb">' + (b.name || 'Build') + '</div>' +
+          '<div class="lib-sub">' + partCount + ' part' + (partCount === 1 ? '' : 's') + '</div>' +
+          '<div class="lib-actions">' +
+            '<button class="lib-btn exp" title="Export as JSON">⬇</button>' +
+            '<button class="lib-btn del" title="Delete build">✕</button>' +
+          '</div>';
+
+        item.addEventListener('click', function () {
+          spawnBuild(b);
+          closeShapesLib();
+        });
+
+        item.addEventListener('dragstart', function (e) {
+          if (appMode !== 'build') { e.preventDefault(); return; }
+          e.dataTransfer.setData('text/plain', 'build:' + b.id);
+          e.dataTransfer.effectAllowed = 'copy';
+          item.classList.add('dragging');
+          libGhost.textContent = '🏗️  ' + (b.name || 'Build');
+          libGhost.classList.add('visible');
+          shapesLibOverlay.style.opacity = '0.35';
+        });
+        item.addEventListener('dragend', function () {
+          item.classList.remove('dragging');
+          libGhost.classList.remove('visible');
+          shapesLibOverlay.style.opacity = '1';
+        });
+
+        item.querySelector('.lib-btn.exp').addEventListener('click', function (e) {
+          e.stopPropagation();
+          exportBuildToJson(b);
+        });
+        item.querySelector('.lib-btn.del').addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (confirm('Delete personal build "' + b.name + '" from your Library?')) {
+            const idx = customBuilds.indexOf(b);
+            if (idx >= 0) customBuilds.splice(idx, 1);
+            saveCustomBuilds();
+            renderLibGrid();
+            if (shapeModal && shapeModal.classList.contains('open')) renderCatalogGrid('builds');
+          }
+        });
+
+        libGrid.appendChild(item);
+      });
+      return;
+    }
+
     const allNames = Object.keys(GEO_FACTORY);
     const catDef = LIB_CATEGORIES.find((c) => c.id === libActiveCat) || LIB_CATEGORIES[0];
 
@@ -4317,12 +4792,17 @@
     if (q) names = names.filter((n) => n.toLowerCase().indexOf(q) >= 0);
 
     libGrid.innerHTML = '';
-    if (names.length === 0) {
+    const bMatches = (catDef.id === 'all') ? customBuilds.filter(function (b) {
+      return !q || (b.name && b.name.toLowerCase().includes(q));
+    }) : [];
+
+    const totalCount = names.length + bMatches.length;
+    if (totalCount === 0) {
       libGrid.innerHTML = '<div class="share-empty" style="grid-column:1/-1;">No shapes match your filter.</div>';
       libCount.textContent = '0 shapes';
       return;
     }
-    libCount.textContent = names.length + ' shape' + (names.length === 1 ? '' : 's');
+    libCount.textContent = totalCount + ' item' + (totalCount === 1 ? '' : 's');
 
     names.forEach((n) => {
       const item = document.createElement('div');
@@ -4360,6 +4840,55 @@
         shapesLibOverlay.style.opacity = '1';
       });
 
+      libGrid.appendChild(item);
+    });
+
+    bMatches.forEach(function (b) {
+      const item = document.createElement('div');
+      item.className = 'lib-item';
+      item.draggable = true;
+      item.dataset.type = 'build:' + b.id;
+      const partCount = (b.shapes && Array.isArray(b.shapes)) ? b.shapes.length : 1;
+      item.innerHTML = '<div class="lib-ic">🏗️</div>' +
+        '<div class="lib-lb">' + (b.name || 'Build') + '</div>' +
+        '<div class="lib-sub">' + partCount + ' parts</div>' +
+        '<div class="lib-actions">' +
+          '<button class="lib-btn exp" title="Export as JSON">⬇</button>' +
+          '<button class="lib-btn del" title="Delete build">✕</button>' +
+        '</div>';
+
+      item.addEventListener('click', function () {
+        spawnBuild(b);
+        closeShapesLib();
+      });
+      item.addEventListener('dragstart', function (e) {
+        if (appMode !== 'build') { e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', 'build:' + b.id);
+        e.dataTransfer.effectAllowed = 'copy';
+        item.classList.add('dragging');
+        libGhost.textContent = '🏗️  ' + (b.name || 'Build');
+        libGhost.classList.add('visible');
+        shapesLibOverlay.style.opacity = '0.35';
+      });
+      item.addEventListener('dragend', function () {
+        item.classList.remove('dragging');
+        libGhost.classList.remove('visible');
+        shapesLibOverlay.style.opacity = '1';
+      });
+      item.querySelector('.lib-btn.exp').addEventListener('click', function (e) {
+        e.stopPropagation();
+        exportBuildToJson(b);
+      });
+      item.querySelector('.lib-btn.del').addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (confirm('Delete personal build "' + b.name + '"?')) {
+          const idx = customBuilds.indexOf(b);
+          if (idx >= 0) customBuilds.splice(idx, 1);
+          saveCustomBuilds();
+          renderLibGrid();
+          if (shapeModal && shapeModal.classList.contains('open')) renderCatalogGrid('builds');
+        }
+      });
       libGrid.appendChild(item);
     });
   }
@@ -4682,6 +5211,18 @@
   // ============================================================
   window.addEventListener('keydown', function (e) {
     if (!projectScreen.classList.contains('active')) return;
+
+    const target = e.target;
+    const tag = target && target.tagName ? target.tagName.toLowerCase() : '';
+    const isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || (target && target.isContentEditable);
+
+    if (isInput) {
+      if (e.key === 'Escape') {
+        target.blur();
+      }
+      return;
+    }
+
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') { e.preventDefault(); setSelection(shapes.slice()); return; }
     if ((e.metaKey || e.ctrlKey) && (e.key === 'g' || e.key === 'G')) { e.preventDefault(); openGroupDialog(); return; }
     if (e.key === 'Escape') {
@@ -4761,19 +5302,65 @@
     if (selectedShape) {
       scaleSlider.disabled = false;
       scaleSlider.value = selectedShape.scale;
-      scaleValue.textContent = selectedShape.scale.toFixed(2);
+      scaleValue.disabled = false;
+      if (document.activeElement !== scaleValue) {
+        scaleValue.value = selectedShape.scale.toFixed(2);
+      }
     } else {
       scaleSlider.disabled = true;
       scaleSlider.value = 1;
-      scaleValue.textContent = '1.00';
+      scaleValue.disabled = true;
+      scaleValue.value = '1.00';
     }
   }
   scaleSlider.addEventListener('input', function (e) {
     if (!selectedShape || appMode !== 'build') return;
     const newScale = parseFloat(e.target.value);
     selectedShapes.forEach(function (s) { s.scale = newScale; });
-    scaleValue.textContent = newScale.toFixed(2);
+    scaleValue.value = newScale.toFixed(2);
     updateStatus(); persistCurrentShapes();
+  });
+  scaleSlider.addEventListener('keydown', function (e) {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      scaleValue.focus();
+      scaleValue.select();
+    }
+  });
+
+  scaleValue.addEventListener('focus', function () {
+    this.select();
+  });
+  scaleValue.addEventListener('input', function (e) {
+    if (!selectedShape || appMode !== 'build') return;
+    const val = parseFloat(e.target.value);
+    if (isFinite(val) && val > 0.001) {
+      selectedShapes.forEach(function (s) { s.scale = val; });
+      scaleSlider.value = Math.min(4, Math.max(0.3, val));
+      updateStatus();
+      refreshDimensionInputs();
+      persistCurrentShapes();
+    }
+  });
+  scaleValue.addEventListener('change', function (e) {
+    if (!selectedShape || appMode !== 'build') return;
+    let val = parseFloat(e.target.value);
+    if (!isFinite(val) || val <= 0.001) {
+      val = selectedShape.scale;
+    }
+    selectedShapes.forEach(function (s) { s.scale = val; });
+    scaleSlider.value = Math.min(4, Math.max(0.3, val));
+    scaleValue.value = val.toFixed(2);
+    updateStatus();
+    refreshDimensionInputs();
+    persistCurrentShapes();
+  });
+  scaleValue.addEventListener('blur', function () {
+    if (selectedShape) {
+      scaleValue.value = selectedShape.scale.toFixed(2);
+    } else {
+      scaleValue.value = '1.00';
+    }
   });
 
   document.getElementById('yUp').addEventListener('click', function () {
@@ -4895,8 +5482,7 @@
   canvas.addEventListener('drop', function (e) {
     e.preventDefault();
     if (appMode !== 'build') { showToast('Switch to Build mode to add shapes', true); return; }
-    const type = e.dataTransfer.getData('text/plain');
-    if (!type || !GEO_FACTORY[type]) return;
+
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -4909,6 +5495,34 @@
       const r = 1 + Math.random() * 2;
       x = Math.cos(angle) * r; z = Math.sin(angle) * r;
     }
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.name.toLowerCase().endsWith('.json') || file.type.indexOf('json') >= 0) {
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          const imported = importBuildFromJson(ev.target.result, 'canvas');
+          if (imported) {
+            spawnBuild(imported, x, z);
+          }
+        };
+        reader.readAsText(file);
+        return;
+      }
+    }
+
+    const type = e.dataTransfer.getData('text/plain');
+    if (type && type.startsWith('build:')) {
+      const bId = type.replace('build:', '');
+      const b = customBuilds.find(function (item) { return item.id === bId; });
+      if (b) {
+        spawnBuild(b, x, z);
+        if (shapesLibOverlay.classList.contains('visible')) closeShapesLib();
+        return;
+      }
+    }
+
+    if (!type || !GEO_FACTORY[type]) return;
     const s = makeShape(type, x, z);
     if (!s) return;
     shapes.push(s);
@@ -5017,9 +5631,9 @@
       if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y;
       if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z;
     });
-    if (dimX) dimX.value = (maxX - minX).toFixed(2);
-    if (dimY) dimY.value = (maxY - minY).toFixed(2);
-    if (dimZ) dimZ.value = (maxZ - minZ).toFixed(2);
+    if (dimX && document.activeElement !== dimX) dimX.value = (maxX - minX).toFixed(2);
+    if (dimY && document.activeElement !== dimY) dimY.value = (maxY - minY).toFixed(2);
+    if (dimZ && document.activeElement !== dimZ) dimZ.value = (maxZ - minZ).toFixed(2);
   }
 
   function applyDimension(axis, newVal) {
@@ -5035,9 +5649,27 @@
     persistCurrentShapes();
   }
 
-  if (dimX) dimX.addEventListener('change', function (e) { applyDimension('x', parseFloat(e.target.value)); });
-  if (dimY) dimY.addEventListener('change', function (e) { applyDimension('y', parseFloat(e.target.value)); });
-  if (dimZ) dimZ.addEventListener('change', function (e) { applyDimension('z', parseFloat(e.target.value)); });
+  [dimX, dimY, dimZ].forEach(function (input) {
+    if (!input) return;
+    input.addEventListener('focus', function () { this.select(); });
+    input.addEventListener('input', function (e) {
+      const val = parseFloat(e.target.value);
+      if (isFinite(val) && val > 0.001) {
+        applyDimension(e.target.id === 'dimX' ? 'x' : e.target.id === 'dimY' ? 'y' : 'z', val);
+      }
+    });
+    input.addEventListener('change', function (e) {
+      const val = parseFloat(e.target.value);
+      if (isFinite(val) && val > 0.001) {
+        applyDimension(e.target.id === 'dimX' ? 'x' : e.target.id === 'dimY' ? 'y' : 'z', val);
+      } else {
+        refreshDimensionInputs();
+      }
+    });
+    input.addEventListener('blur', function () {
+      refreshDimensionInputs();
+    });
+  });
 
   function drawMeasurementGuides(shape, view) {
     if (!shape || !shape.geo || !shape.geo.vertices || shape.geo.vertices.length === 0) return;
@@ -5077,50 +5709,42 @@
   // v3: PRECISION SNAPPING SYSTEM
   // ============================================================
   const snap = {
+    enabled: true,
     move: { enabled: true, step: 0.5 },
     rotate: { enabled: true, step: 15 },
     scale: { enabled: true, step: 0.1 }
   };
-  const snapHeader = document.getElementById('snapHeader');
-  const snapBody = document.getElementById('snapBody');
-  const snapChevron = document.getElementById('snapChevron');
-  const snapPanel = document.getElementById('snapPanel');
   const snapToggleBtn = document.getElementById('snapToggleBtn');
-  const snapMoveToggle = document.getElementById('snapMoveToggle');
-  const snapMoveInput = document.getElementById('snapMoveInput');
-  const snapRotToggle = document.getElementById('snapRotToggle');
-  const snapRotInput = document.getElementById('snapRotInput');
-  const snapScaleToggle = document.getElementById('snapScaleToggle');
-  const snapScaleInput = document.getElementById('snapScaleInput');
 
-  function toggleSnapPanel() {
-    if (!snapPanel) return;
-    const isCol = snapPanel.classList.toggle('collapsed');
-    if (snapChevron) snapChevron.textContent = isCol ? '▸' : '▾';
-    if (snapToggleBtn) snapToggleBtn.classList.toggle('active', !isCol);
+  function updateSnapUI() {
+    if (!snapToggleBtn) return;
+    snapToggleBtn.classList.toggle('active', !!snap.enabled);
+    snapToggleBtn.textContent = snap.enabled ? '🧲 Snap ON' : '🧲 Snap';
   }
 
-  if (snapToggleBtn) snapToggleBtn.addEventListener('click', toggleSnapPanel);
-  if (snapHeader) snapHeader.addEventListener('click', toggleSnapPanel);
-
-  if (snapMoveToggle) snapMoveToggle.addEventListener('change', function (e) { snap.move.enabled = e.target.checked; });
-  if (snapMoveInput) snapMoveInput.addEventListener('change', function (e) { snap.move.step = parseFloat(e.target.value) || 0.5; });
-  if (snapRotToggle) snapRotToggle.addEventListener('change', function (e) { snap.rotate.enabled = e.target.checked; });
-  if (snapRotInput) snapRotInput.addEventListener('change', function (e) { snap.rotate.step = parseFloat(e.target.value) || 15; });
-  if (snapScaleToggle) snapScaleToggle.addEventListener('change', function (e) { snap.scale.enabled = e.target.checked; });
-  if (snapScaleInput) snapScaleInput.addEventListener('change', function (e) { snap.scale.step = parseFloat(e.target.value) || 0.1; });
+  if (snapToggleBtn) {
+    updateSnapUI();
+    snapToggleBtn.addEventListener('click', function () {
+      snap.enabled = !snap.enabled;
+      snap.move.enabled = snap.enabled;
+      snap.rotate.enabled = snap.enabled;
+      snap.scale.enabled = snap.enabled;
+      updateSnapUI();
+      showToast(snap.enabled ? '🧲 Precision Snap: ON (0.5m / 15°)' : '🧲 Precision Snap: OFF');
+    });
+  }
 
   function snapMoveValue(value) {
-    if (!snap.move.enabled) return value;
+    if (!snap.enabled || !snap.move.enabled) return value;
     return Math.round(value / snap.move.step) * snap.move.step;
   }
   function snapRotation(value) {
-    if (!snap.rotate.enabled) return value;
+    if (!snap.enabled || !snap.rotate.enabled) return value;
     const stepRad = snap.rotate.step * Math.PI / 180;
     return Math.round(value / stepRad) * stepRad;
   }
   function snapScaleValue(value) {
-    if (!snap.scale.enabled) return value;
+    if (!snap.enabled || !snap.scale.enabled) return value;
     return Math.max(0.15, Math.round(value / snap.scale.step) * snap.scale.step);
   }
 
@@ -5134,85 +5758,6 @@
   const shapeModalGrid = document.getElementById('shapeModalGrid');
   const shapeSearch = document.getElementById('shapeSearch');
   const saveBuildBtn = document.getElementById('saveBuildBtn');
-  let customBuilds = [];
-  try {
-    const rawBuilds = localStorage.getItem('bananacad_builds');
-    if (rawBuilds) customBuilds = JSON.parse(rawBuilds);
-  } catch (e) {}
-
-  function saveCustomBuilds() {
-    try { localStorage.setItem('bananacad_builds', JSON.stringify(customBuilds)); } catch (e) {}
-  }
-
-  function saveBuildFromShape(shape) {
-    if (!shape) return;
-    const name = 'Build ' + (customBuilds.length + 1);
-    const newBuild = {
-      id: 'build_' + Date.now(),
-      name: name,
-      color: shape.color,
-      isFused: true,
-      shapes: [{
-        type: shape.type,
-        isFused: true,
-        geo: {
-          vertices: shape.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
-          edges: shape.geo.edges.map(function (e) { return [e[0], e[1]]; }),
-          faces: shape.geo.faces.map(function (f) { return f.slice(); })
-        },
-        relPos: { x: 0, y: 0, z: 0 },
-        rot: { x: shape.rot.x, y: shape.rot.y, z: shape.rot.z },
-        scale: shape.scale || 1,
-        stretch: shape.stretch ? { x: shape.stretch.x, y: shape.stretch.y, z: shape.stretch.z } : { x: 1, y: 1, z: 1 },
-        color: shape.color,
-        negative: !!shape.negative,
-        gearTeeth: shape.gearTeeth || 0
-      }]
-    };
-    customBuilds.push(newBuild);
-    saveCustomBuilds();
-    showToast('Auto-saved fused model to Builds library: "' + name + '"');
-  }
-
-  function saveBuildFromSelection() {
-    if (!selectedShapes || selectedShapes.size === 0) {
-      showToast('Select shape(s) first to save as build', true);
-      return;
-    }
-    const list = Array.from(selectedShapes);
-    const center = getMultiCenter(list);
-    const name = 'Build ' + (customBuilds.length + 1);
-
-    const savedShapes = list.map(function (s) {
-      return {
-        type: s.type,
-        isFused: !!s.isFused,
-        geo: {
-          vertices: s.geo.vertices.map(function (v) { return { x: v.x, y: v.y, z: v.z }; }),
-          edges: s.geo.edges.map(function (e) { return [e[0], e[1]]; }),
-          faces: s.geo.faces.map(function (f) { return f.slice(); })
-        },
-        relPos: { x: s.pos.x - center.x, y: s.pos.y - center.y, z: s.pos.z - center.z },
-        rot: { x: s.rot.x, y: s.rot.y, z: s.rot.z },
-        scale: s.scale || 1,
-        stretch: s.stretch ? { x: s.stretch.x, y: s.stretch.y, z: s.stretch.z } : { x: 1, y: 1, z: 1 },
-        color: s.color,
-        negative: !!s.negative,
-        gearTeeth: s.gearTeeth || 0
-      };
-    });
-
-    const newBuild = {
-      id: 'build_' + Date.now(),
-      name: name,
-      shapes: savedShapes,
-      color: list[0].color,
-      isFused: list.length === 1 && list[0].isFused
-    };
-    customBuilds.push(newBuild);
-    saveCustomBuilds();
-    showToast('Saved "' + name + '" (' + savedShapes.length + ' parts) to Builds library!');
-  }
 
   if (saveBuildBtn) {
     saveBuildBtn.addEventListener('click', saveBuildFromSelection);
@@ -5274,59 +5819,63 @@
     shapeModalGrid.innerHTML = '';
 
     if (cat === 'builds') {
+      const bar = document.createElement('div');
+      bar.style.gridColumn = '1 / -1';
+      bar.style.display = 'flex';
+      bar.style.justifyContent = 'space-between';
+      bar.style.alignItems = 'center';
+      bar.style.background = '#18182b';
+      bar.style.border = '1px solid #4a4a72';
+      bar.style.borderRadius = '10px';
+      bar.style.padding = '8px 12px';
+      bar.style.marginBottom = '6px';
+      bar.innerHTML = '<span style="font-size:0.75rem; color:#b0b0e0; font-weight:700;">🏗️ Personal Builds (' + customBuilds.length + ')</span>' +
+        '<div style="display:flex; gap:8px;">' +
+          '<button id="catImportBtn" class="topbar-action" style="font-size:0.72rem; padding:4px 10px; background:#7a5aff; color:#fff;" title="Import a .json build file">📥 Import .JSON</button>' +
+          '<button id="catSaveBtn" class="topbar-action" style="font-size:0.72rem; padding:4px 10px; background:#2b2b48; border:1px solid #56568a; color:#f7d44f;" title="Save current shapes as a build">💾 Save Current</button>' +
+        '</div>';
+      shapeModalGrid.appendChild(bar);
+      bar.querySelector('#catImportBtn').addEventListener('click', function () { promptImportBuildFile('library'); });
+      bar.querySelector('#catSaveBtn').addEventListener('click', saveBuildFromSelection);
+
       if (customBuilds.length === 0) {
-        shapeModalGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8a8ab8;padding:30px;">No saved builds yet. Select shapes and click "💾 Save Build", or fuse shapes together.</div>';
+        const empty = document.createElement('div');
+        empty.style.gridColumn = '1 / -1';
+        empty.style.textAlign = 'center';
+        empty.style.color = '#8a8ab8';
+        empty.style.padding = '30px';
+        empty.innerHTML = 'No personal builds saved yet.<br><br>Select shapes and click "💾 Save Current", or click "📥 Import .JSON".';
+        shapeModalGrid.appendChild(empty);
         return;
       }
       customBuilds.forEach(function (b, idx) {
         const item = document.createElement('div');
         item.className = 'shape-modal-item build';
-        item.innerHTML = '<span class="icon">🏗️</span><span class="lbl">' + b.name + '</span><button class="del-build">✕</button>';
+        const partCount = (b.shapes && Array.isArray(b.shapes)) ? b.shapes.length : 1;
+        item.innerHTML = '<span class="icon">🏗️</span>' +
+          '<span class="lbl">' + (b.name || 'Build') + '</span>' +
+          '<span style="font-size:0.5rem; color:#f7c44f;">' + partCount + ' part' + (partCount === 1 ? '' : 's') + '</span>' +
+          '<div class="build-actions">' +
+            '<button class="b-btn exp" title="Export as JSON">⬇</button>' +
+            '<button class="b-btn del" title="Delete build">✕</button>' +
+          '</div>';
         item.addEventListener('click', function () {
-          const targetX = (Math.random() - 0.5) * 4;
-          const targetZ = (Math.random() - 0.5) * 4;
-          const newSpawned = [];
-
-          if (b.shapes && Array.isArray(b.shapes)) {
-            b.shapes.forEach(function (data) {
-              let geo;
-              if (data.geo && data.geo.vertices && data.geo.vertices.length > 0) {
-                geo = {
-                  vertices: data.geo.vertices.map(function (v) { return v3(v.x, v.y, v.z); }),
-                  edges: data.geo.edges.map(function (e) { return [e[0], e[1]]; }),
-                  faces: data.geo.faces.map(function (f) { return f.slice(); })
-                };
-              } else {
-                geo = GEO_FACTORY[data.type] ? GEO_FACTORY[data.type]() : boxGeo();
-              }
-              const s = {
-                type: data.type,
-                geo: geo,
-                pos: v3(targetX + (data.relPos ? data.relPos.x : 0), (data.relPos ? data.relPos.y : 0), targetZ + (data.relPos ? data.relPos.z : 0)),
-                rot: data.rot ? v3(data.rot.x, data.rot.y, data.rot.z) : v3(0, 0, 0),
-                scale: data.scale || 1,
-                stretch: data.stretch ? v3(data.stretch.x, data.stretch.y, data.stretch.z) : v3(1, 1, 1),
-                color: data.color || b.color || activeColor,
-                negative: !!data.negative,
-                isFused: !!data.isFused,
-                gearTeeth: data.gearTeeth || 0,
-                group: null
-              };
-              shapes.push(s);
-              newSpawned.push(s);
-            });
-          }
-          setSelection(newSpawned);
-          persistCurrentShapes();
+          spawnBuild(b);
           if (shapeModal) shapeModal.classList.remove('open');
           if (shapeModalOverlay) shapeModalOverlay.classList.remove('open');
-          showToast('Spawned build: ' + b.name);
         });
-        item.querySelector('.del-build').addEventListener('click', function (e) {
+        item.querySelector('.b-btn.exp').addEventListener('click', function (e) {
           e.stopPropagation();
-          customBuilds.splice(idx, 1);
-          saveCustomBuilds();
-          renderCatalogGrid('builds');
+          exportBuildToJson(b);
+        });
+        item.querySelector('.b-btn.del').addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (confirm('Delete personal build "' + b.name + '"?')) {
+            customBuilds.splice(idx, 1);
+            saveCustomBuilds();
+            renderCatalogGrid('builds');
+            if (shapesLibOverlay.classList.contains('visible')) renderLibGrid();
+          }
         });
         shapeModalGrid.appendChild(item);
       });
